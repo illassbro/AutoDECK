@@ -26,7 +26,7 @@ namespace AUTODECK
         public static Boolean MAKE = false;
         public static Boolean COMPLETE = false;
 
-        //#TCP SERVER STARTED OUTPT [[ Started SelectChannelConnector@0.0.0.0:4440 ]]
+        //#TCP SERVER STARTED OUTPUT [[ Started SelectChannelConnector@0.0.0.0:4440 ]]
         //static string D = "@0.0.0.0:4440";
         //static Regex exit = new Regex("(?ix)" + D);
 
@@ -281,7 +281,7 @@ namespace AUTODECK
             Console.WriteLine("[GET PASSWORD INFO] Current directory: {0}", Directory.GetCurrentDirectory());
             string PASSFILE = "passfile.txt";
             var passlist = File.ReadAllLines(PASSFILE);
-            foreach (var s in passlist) pass.Add(s); //LIST EXTERNEL TO THIS CLASS
+            foreach (var s in passlist) pass.Add(s); //LIST EXTERNAL TO THIS CLASS
             //pass.Add("toor");
 
             List<object> user = new List<object>(); //USER LIST [NOT USED FOR NOW]
@@ -299,7 +299,7 @@ namespace AUTODECK
             foreach (string host in hosts)
             {
                 while (TRUN >= TMAX) { } //BLOCK THREADS AT MAX
-                Console.WriteLine("RUNING THREAD #: " + i);
+                Console.WriteLine("RUNNING THREAD #: " + i);
                 threads[i] = new Thread(() => _tssh(host));
                 threads[i].Name = "SSH THREAD #: " + i;
                 threads[i].Start();
@@ -385,12 +385,12 @@ namespace AUTODECK
                         //catch (Exception con)
                         catch
                         {
-                            //Console.WriteLine("SSH CONNECTION FAILER: [BAD PASSWORD?  " + pw + "] [HOST: " + host + "]" + con);
-                            Console.WriteLine("SSH CONNECTION FAILER: [BAD PASSWORD? " + pw + "] [HOST: " + host + "]");
+                            //Console.WriteLine("SSH CONNECTION FAILURE: [BAD PASSWORD?  " + pw + "] [HOST: " + host + "]" + con);
+                            Console.WriteLine("SSH CONNECTION FAILURE: [BAD PASSWORD? " + pw + "] [HOST: " + host + "]");
                             continue; //IF CONNECTION FAILS NEXT LOOP
                         }
 
-                        StringBuilder sshcmd = new StringBuilder(); //BUILD CLI STINGS
+                        StringBuilder sshcmd = new StringBuilder(); //BUILD CLI STRINGS
                         sshcmd.Append(" uname -a;");
                         sshcmd.Append(" mkdir -p ~/.ssh;");
                         sshcmd.Append(" chmod 700 .ssh;");
@@ -414,7 +414,7 @@ namespace AUTODECK
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("THREAD FILED: " + Thread.CurrentThread.Name + " @HOST: " + host.ToString() + "\n" + e.ToString());
+                    Console.WriteLine("THREAD FAILED: " + Thread.CurrentThread.Name + " @HOST: " + host.ToString() + "\n" + e.ToString());
                 }
                 finally
                 {
@@ -487,7 +487,7 @@ namespace AUTODECK
             foreach (goodword w in myword)
             {
                 xwr.WriteStartElement("node"); //<name>
-                xwr.WriteAttributeString("name", (string)w.ghost); //Attribute Must be befo
+                xwr.WriteAttributeString("name", (string)w.ghost); //Attribute Must be before
                 xwr.WriteAttributeString("description", "");
                 xwr.WriteAttributeString("tags", "");
                 xwr.WriteAttributeString("hostname", (string)w.ghost); //Attribute Must be after Element
