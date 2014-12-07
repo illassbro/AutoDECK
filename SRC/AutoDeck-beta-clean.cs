@@ -54,8 +54,6 @@ namespace AUTODECK
         public static Object thisLock = new Object();
 
 
-
-
         static void Main(string[] args)
         {
 
@@ -124,13 +122,13 @@ namespace AUTODECK
             }
 
             
-            //[[#AutoDECK]] MAKE CALLER BAT FILES - with proper cli switches to call BIN
+            //[[#AutoDECK]] MAKE CALLER BAT FILES
             Directory.SetCurrentDirectory(dir0);
             Console.WriteLine("[BAT FILE] Current directory: {0}", Directory.GetCurrentDirectory());
 
             Console.WriteLine("MAKING RUNDECK BAT FILE");
             System.IO.StreamWriter rdfile = new System.IO.StreamWriter(@"RUNDECK-START.bat");
-            StringBuilder rdeck = new StringBuilder(); //BUILD STING ONE TIME USE "rdeck" LATER
+            StringBuilder rdeck = new StringBuilder();
             rdfile.WriteLine("cd " + dir2);
             rdeck.Append('"');
             if (bit64)
@@ -234,8 +232,7 @@ namespace AUTODECK
             //Console.ReadKey();
 
 
-            //[[#AutoDECK]] NEED FUNC TO CONVERT putty public key into UNIX like KEY
-            //REMOVE begin;end;comment; remove newline; add rsa token "ssh-rsa " in front and @user "autodeck@pretend-machine.com" sig in back 
+            //[[#AutoDECK]] CONVERT putty public key into UNIX like KEY
             string pattern1 = @"begin";
             string pattern2 = @"end";
             string pattern3 = @"comment:";
@@ -409,7 +406,7 @@ namespace AUTODECK
                         Console.WriteLine(output);
                         client.Disconnect();
                         client.Dispose();
-                        break; //IF ALL WORKS OUT BREAK FOREACH LOOP
+                        break; //IF WORKS BREAK LOOP
                     }
                 }
                 catch (Exception e)
@@ -538,6 +535,6 @@ namespace AUTODECK
             }
         }
 
-    }//CLASS END; OTHER CLASS; ENUM; METHODS TO FOLLOW
+    }//CLASS END
 
 }//NAMESPACE END
