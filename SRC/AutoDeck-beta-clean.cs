@@ -26,16 +26,16 @@ namespace AUTODECK
         public static Boolean MAKE = false;
         public static Boolean COMPLETE = false;
 
-        //#TCP SERVER STARTED OUTPUT [[ Started SelectChannelConnector@0.0.0.0:4440 ]]
-        //static string D = "@0.0.0.0:4440";
-        //static Regex exit = new Regex("(?ix)" + D);
+        public static Boolean PGO = false;
+        public static Boolean pbit64 = false;
+        public static Boolean GotPutty = false;
 
         //DIR VARS
         public static string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         public static string dir0 = desktop + @"\AutoDECK";
         public static string dir1 = desktop + @"\AutoDECK\SSH_KEY";
         public static string dir2 = desktop + @"\AutoDECK\RUNDECK";
-        public static string dir3 = desktop + @"\AutoDECK\SBIN";
+        public static string dir3 = desktop + @"\AutoDECK\BIN";
 
         //[[#AutoDECK]] SSH KEY
         public static StringBuilder sshkey = new StringBuilder();
@@ -43,16 +43,19 @@ namespace AUTODECK
         public static string pubkeyFile = null;
         public static object PrvKey = null;
 
-        //[[#AutoDECK]] NEED THIS FOR ACCESS TO PASSWORDS
+        //[[#AutoDECK]] PASSWORDS
         public static List<object> pass = new List<object>(); //PASSWORD LIST
 
-        //[[#AutoDECK]] COUNT ALIVE THREADS PAUSE LOOP UNTIL ALIVE LESS THAN MAX
-        public static int TMAX = 50; //THREAD MAX
+        //[[#AutoDECK]] COUNT ALIVE THREADS PAUSE LOOP UNTIL THAN MAX
+        public static int OD = 0;
+        public static int OVER = 200; //OVER DRIVE
+        public static int TMAX = 5; //THREAD MAX
         public static int TRUN = 0; //RUNNING THREAD COUNT
 
         //[[#AutoDECK]] THREAD POOL LOCK
         public static Object thisLock = new Object();
-
+        public static Object wordLock = new Object();
+        public static Object listLock = new Object();
 
         static void Main(string[] args)
         {
@@ -90,11 +93,24 @@ namespace AUTODECK
             string java64 = @"C:\Program Files (x86)\Java\jre6\bin\";
             string java86 = @"C:\Program Files\Java\jre6\bin\";
 
+            List<object> javaURL = new List<object>();
+            javaURL.Add("http://www.oracle.com/technetwork/java/javase/downloads/java-archive-downloads-javase6-419409.html#jre-6u45-oth-JPR");
+            javaURL.Add("http://www.oracle.com/technetwork/java/javase/archive-139210.html");
+
             while (!GotJava)
             {
-                //IF EXITS x86/x64: 
-                Directory.SetCurrentDirectory(java64);
-                Console.WriteLine("[GOT JAVA] Current directory: {0}", Directory.GetCurrentDirectory());
+                //IF x86/x64: 
+                try
+                {
+                    Directory.SetCurrentDirectory(java64);
+                    Console.WriteLine("[GOT JAVA] Current directory: {0}", Directory.GetCurrentDirectory());
+                }
+                catch
+                {
+                    //NONE
+                }
+
+                
                 if (File.Exists("java.exe"))
                 {
                     bit64 = true;
@@ -103,8 +119,16 @@ namespace AUTODECK
                 }
                 else
                 {
-                    Directory.SetCurrentDirectory(java86);
-                    Console.WriteLine("[GOT JAVA] Current directory: {0}", Directory.GetCurrentDirectory());
+                    try
+                    {
+                        Directory.SetCurrentDirectory(java86);
+                        Console.WriteLine("[GOT JAVA] Current directory: {0}", Directory.GetCurrentDirectory());
+                    }
+                    catch
+                    {
+                        //NONE
+                    }
+
                 }
                 if (File.Exists("java.exe"))
                 {
@@ -118,6 +142,11 @@ namespace AUTODECK
                 }
                 Console.WriteLine("\n\n\n\n\n\n\n\n\n\n\nPLEASE INSTALL JAVA 1.6");
                 Console.WriteLine("  ......I'll WAIT UNTIL YOU DO\n[PLEASE PRESS ENTER]");
+                Console.WriteLine("\n\nNEED HELP? PLEASE SEE:");
+                foreach (string url in javaURL)
+                {
+                    Console.WriteLine(url);
+                }
                 Console.ReadKey();
             }
 
@@ -180,12 +209,10 @@ namespace AUTODECK
                 HostLlist.StartInfo.FileName = "notepad";
                 HostLlist.StartInfo.Arguments = hFile;
 
-                //Thread notethread = new Thread(() => System.Diagnostics.Process.Start("notepad"));
                 Thread notethread = new Thread(() => HostLlist.Start());
                 notethread.Name = "NOTEPAD THREAD";
                 notethread.Start();
 
-                //var notepad = System.Diagnostics.Process.Start("notepad");
                 System.Diagnostics.Process PassList = new System.Diagnostics.Process();
                 PassList.StartInfo.FileName = "notepad";
                 PassList.StartInfo.Arguments = pFile;
@@ -194,8 +221,82 @@ namespace AUTODECK
                 PassList.WaitForExit();
                 HostLlist.WaitForExit();
             }
+
             
-                          
+            string putty64 = @"C:\Program Files (x86)\PuTTY\";
+            string putty86 = @"C:\Program Files\PuTTY\";
+
+            while (!GotPutty)
+            {
+                //IF x86/x64: 
+                try
+                {
+                    Directory.SetCurrentDirectory(putty64);
+                }
+                catch
+                {
+                    //NONE
+                }
+                
+                Console.WriteLine("[GOT Putty] Current directory: {0}", Directory.GetCurrentDirectory());
+                if (File.Exists("puttygen.exe"))
+                {
+                    pbit64 = true;
+                    GotPutty = true;
+                    break;
+                }
+                else
+                {
+                    try
+                    {
+                        Directory.SetCurrentDirectory(putty86);
+                        Console.WriteLine("[GOT Putty] Current directory: {0}", Directory.GetCurrentDirectory());
+                    }
+                    catch
+                    {
+                        //NONE
+                    }
+
+                }
+
+                if (File.Exists("puttygen.exe"))
+                {
+                    pbit64 = false;
+                    GotPutty = true;
+                    break;
+                }
+                else
+                {
+                    GotPutty = false;
+
+                    Console.WriteLine("\n\n\n\n\n\n\n\n\n\n\nPLEASE INSTALL Putty");
+                    Console.WriteLine("  ......I'll WAIT UNTIL YOU DO\n[PLEASE PRESS ENTER]");
+
+                    //WEBCLIENT (DOWNLOAD PUTTY)
+                    Thread getpthread = new Thread(() => _GetPutty());
+                    getpthread.Name = "GET PUTTY THREAD";
+                    getpthread.Start();
+                    
+                    while (!PGO) { }
+
+                    //[[#AutoDECK]] START UP RUNDECK PROC w/FORK
+                    Directory.SetCurrentDirectory(dir3);
+                    //Console.WriteLine("[START PUTTY INSTALL] Current directory: {0}", Directory.GetCurrentDirectory());
+                    System.Diagnostics.Process _InstallP = new System.Diagnostics.Process();
+                    _InstallP.StartInfo.FileName = "putty-0.63-installer.exe";
+                    Thread putthread = new Thread(() => _InstallP.Start());
+                    putthread.Name = "PUTTY INSTALL THREAD";
+                    putthread.Start();
+                    
+                }
+
+                if (GotPutty) break;
+                Console.WriteLine("\n\n\n\n\n\n\n\n\n\n\nPLEASE INSTALL Putty");
+                Console.WriteLine("  ......I'll WAIT UNTIL YOU DO\n[PLEASE PRESS ENTER]");
+                Console.ReadKey();
+            }
+
+
             //[[#AutoDECK]] OPEN PuttyGen to make KEYS
             prvkeyFile = dir1 + @"\id_dsa.ppk";
             pubkeyFile = dir1 + @"\id_dsa.pub";
@@ -229,10 +330,7 @@ namespace AUTODECK
                 Console.ReadKey();
             }
 
-            //Console.ReadKey();
-
-
-            //[[#AutoDECK]] CONVERT putty public key into UNIX like KEY
+            //[[#AutoDECK]] CONVERT putty public key
             string pattern1 = @"begin";
             string pattern2 = @"end";
             string pattern3 = @"comment:";
@@ -264,44 +362,76 @@ namespace AUTODECK
             ksfile.Close();
             Console.WriteLine(".........DONE MAKING KEY STRING FILE");
 
-            //[[#AutoDECK 2.0]] NEED "PUSH/POP" LIST FOR PING CHECK -> ADD TO THREAD QUEUE
-
             //[[#AutoDECK]] (DONE) FOR NOW JUST LOAD LISTS
             Directory.SetCurrentDirectory(dir0);
             Console.WriteLine("[GET HOST INFO] Current directory: {0}", Directory.GetCurrentDirectory());
             string HOSTFILE = "hostfile.txt";
             var hostlist = File.ReadAllLines(HOSTFILE);
-            List<object> hosts = new List<object>(hostlist); //HOST LIST; LIST LOCAL TO THIS CLASS
+            List<object> hosts = new List<object>(hostlist); //HOST LIST
             //hosts.Add("14.0.0.126");
 
             Directory.SetCurrentDirectory(dir0);
             Console.WriteLine("[GET PASSWORD INFO] Current directory: {0}", Directory.GetCurrentDirectory());
             string PASSFILE = "passfile.txt";
             var passlist = File.ReadAllLines(PASSFILE);
-            foreach (var s in passlist) pass.Add(s); //LIST EXTERNAL TO THIS CLASS
-            //pass.Add("toor");
+            foreach (var s in passlist) pass.Add(s); //PASSWD LIST 
+            //pass.Add("passwd");
 
             List<object> user = new List<object>(); //USER LIST [NOT USED FOR NOW]
             user.Add("root");
 
 
-            //[[#AutoDECK]] (My) THREAD POOL RUN NO MORE THAN MAX(TMAX)
+            //[[#AutoDECK]] (My) THREAD POOL : RUN NO MORE THAN MAX(TMAX)
             int t = 0;
             foreach (string host in hosts) //MAKE THREAD COUNT
-                t++;
+                              t++;
             Thread[] threads = new Thread[t]; //THREAD ARRAY
             Console.WriteLine("QUEUED UP [" + t + "] THREADS.."); //SHOW HOW MANY THREADS
 
             int i = 0; //THREAD COUNT
             foreach (string host in hosts)
             {
-                while (TRUN >= TMAX) { } //BLOCK THREADS AT MAX
+                while (TRUN >= TMAX) 
+                {
+                    Thread.Sleep(1);
+                    OD++;
+                    if (OD == 1000)
+                    {
+                        if (TMAX <= OVER) 
+                        { 
+                            TMAX += 2 ; 
+                            OD = 0; 
+                            Console.WriteLine("ADDED MORE THREADS#: " + TMAX); 
+                        }
+                    }
+                        
+                } //BLOCK THREADS AT MAX
                 Console.WriteLine("RUNNING THREAD #: " + i);
                 threads[i] = new Thread(() => _tssh(host));
-                threads[i].Name = "SSH THREAD #: " + i;
+                threads[i].Name = i.ToString(); //SET THREAD NUM
                 threads[i].Start();
                 i++;
             }
+
+
+            //MAKE SURE ALL THREADS IN POOL ARE DEAD
+            while(true)
+            { 
+                int tha = t -1;
+                int thd = t -1;
+                for ( ; tha > 0 ; tha-- )
+                {
+                    //Console.WriteLine("THREAD DEAD: " + tha);
+                        if (!threads[tha].IsAlive)
+                        {
+                            thd--;
+                        }
+                }
+                if(thd <= 0)
+                    break;
+            }
+
+
 
             //MAKE RUNDECK resource.xml
             Thread makethread = new Thread(() => _MakeXML());
@@ -330,9 +460,12 @@ namespace AUTODECK
             Console.WriteLine("\n\n[[SEE: http://rundeck.org/docs/]]");
             Console.ReadKey();
 
+
+
+
         }//METHODS
 
-        //[[#AutoDECK]] CHANGE TO FOUND_PASSWORDS; "DATA TYPE" CLASS IN A LIST (Only Public NOT static )
+        //[[#AutoDECK]]
         public class goodword //GOOD PASSWORD LIST
         {
             public object ghost { get; set; } 
@@ -357,69 +490,150 @@ namespace AUTODECK
             lock (thisLock)
             {
                 TRUN--;
+                if(TMAX >= 60)
+                    TMAX -= 5;
+                else if (TMAX > 51)
+                    TMAX -= 1;
+            }
+        }
+
+
+        public static void addPASS(object host, object user, object pw)
+        {
+            lock (wordLock)
+            {
+                myword.Add(new goodword { ghost = host, guser = user, gpassword = pw }); //UPDATE PASSWORD LIST
+            }
+        }
+
+        /*
+         *Shuffle the starting password to the same index# as the host#
+         *in case a known (host == password) list is added
+         *Otherwise it iterates the whole list 
+        */ 
+        public static List<object> shuffle() 
+        {
+            lock (listLock)
+            {
+
+                List<object> mypass = new List<object>();
+                mypass = pass;
+                List<object> newmypass = new List<object>();
+                newmypass = pass;
+                List<object> usemypass = new List<object>();
+
+                int cp = 0;
+                foreach (string p in mypass) //LIST
+                {
+                    //int idx = mypass.IndexOf(p); //INDEX OF ITEM
+                    int idx = cp;
+                    cp++;
+                    int tc = Convert.ToInt16(Thread.CurrentThread.Name); //USE THREAD NAME AS INDEX
+                    //Console.WriteLine("THREAD{2}: {0} == {1}?", idx, tc, Thread.CurrentThread.Name); //DEBUG VIEW
+                    if (idx == tc)
+                    {
+                        newmypass.RemoveAt(idx); //SHUFFLE: Remove Item Here
+                        //newmypass.Insert(0, "ADDED: " + p); //TESTING
+                        newmypass.Insert(0,p); //ADD Item to top of list
+                        break;
+                    }
+                }
+                usemypass = newmypass; //LAST COPY
+
+                /*
+                //TEST NEW LIST
+                int osize = newmypass.Count;
+                int isize = mypass.Count;
+                //Console.WriteLine("SIZE OF LIST: {0} = {1}?", isize, osize); //DEBUG VIEW
+                foreach (string i in usemypass)
+                {
+                    Console.WriteLine("{1} NEW LIST: {0}", i, Thread.CurrentThread.Name); //DEBUG VIEW
+                    break;
+                }
+                */
+                List<object> sh = usemypass;
+                return sh;
             }
         }
 
         //[[#AutoDECK]] SSH THREADS
         public static void _tssh(string host)
         {
-            foreach (string pw in pass) //LOOP OVER PASSWORD LIST
+            IsRUN(); //UPDATE POOL COUNTER
+
+            List<object> thepass = new List<object>();
+            thepass = shuffle(); //DO THE SHUFFLE
+
+            try
             {
-                try
+                Console.WriteLine(">> {0} START: SSH TO HOST: {1} <<", Thread.CurrentThread.Name, host);
+                foreach (string pw in thepass) //LOOP OVER PASSWORD LIST
                 {
-                    IsRUN(); //UPDATE POOL COUNTER
-                    Console.WriteLine("SSH TO HOST: " + host + " :THREAD: " + Thread.CurrentThread.Name);
-                    string user = "root"; //SET UID
-
-                    using (var client = new SshClient(host, user, pw))
+                    try
                     {
-                        try
+                        string user = "root"; //SET UID
+                        using (var client = new SshClient(host, user, pw))
                         {
-                            client.Connect(); //TRY CONNECTION
-                            Console.WriteLine("CONNECTED [GOOD PASSWORD: " + pw + "] [HOST: " + host + "]");
-                            myword.Add(new goodword { ghost = host, guser = user, gpassword = pw }); //UPDATE PASSWORD LIST
+                            try
+                            {
+                                var jim = new SshClient(host, user, pw);
+                                client.Connect(); //TRY CONNECTION
+                                //Console.WriteLine("{0} CONNECTED: [GOOD PASSWORD: {2}] [HOST: {1}]", Thread.CurrentThread.Name, host, pw);
+                                addPASS(host, user, pw);
+
+                                
+                            }
+                            //catch (Exception con)
+                            catch
+                            {
+                                //Console.WriteLine("SSH CONNECTION FAILURE: [BAD PASSWORD?  " + pw + "] [HOST: " + host + "]" + con);
+                                Console.WriteLine("{0} SSH CONNECTION FAILURE: [BAD PASSWORD? {2}] [HOST: {1}]", Thread.CurrentThread.Name, host, pw);
+                                continue; //IF CONNECTION FAILS NEXT LOOP
+                            }
+
+                            StringBuilder sshcmd = new StringBuilder(); //BUILD CLI STRINGS
+                            sshcmd.Append(" uname -a;");
+                            sshcmd.Append(" mkdir -p ~/.ssh;");
+                            sshcmd.Append(" chmod 700 .ssh;");
+                            sshcmd.Append(" touch ~/.ssh/authorized_keys;");
+                            sshcmd.Append(" touch ~/.ssh/authorized_keys2;");
+                            sshcmd.Append(" chmod 600 ~/.ssh/authorized_keys;");
+                            sshcmd.Append(" chmod 600 ~/.ssh/authorized_key2;");
+                            sshcmd.Append(" echo '" + sshkey + "' >> ~/.ssh/authorized_keys;");
+                            sshcmd.Append(" echo '" + sshkey + "' >> ~/.ssh/authorized_keys2;");
+                            sshcmd.Append(" cat ~/.ssh/authorized_keys;");
+                            sshcmd.Append(" cat ~/.ssh/authorized_keys2;");
+
+                            var terminal = client.RunCommand(sshcmd.ToString());
+
+                            var output = terminal.Result;
+                            //Console.WriteLine(output);
+                            client.Disconnect();
+                            client.Dispose();
+                            break; //IF WORKS BREAK LOOP
                         }
-                        //catch (Exception con)
-                        catch
-                        {
-                            //Console.WriteLine("SSH CONNECTION FAILURE: [BAD PASSWORD?  " + pw + "] [HOST: " + host + "]" + con);
-                            Console.WriteLine("SSH CONNECTION FAILURE: [BAD PASSWORD? " + pw + "] [HOST: " + host + "]");
-                            continue; //IF CONNECTION FAILS NEXT LOOP
-                        }
-
-                        StringBuilder sshcmd = new StringBuilder(); //BUILD CLI STRINGS
-                        sshcmd.Append(" uname -a;");
-                        sshcmd.Append(" mkdir -p ~/.ssh;");
-                        sshcmd.Append(" chmod 700 .ssh;");
-                        sshcmd.Append(" touch ~/.ssh/authorized_keys;");
-                        sshcmd.Append(" touch ~/.ssh/authorized_keys2;");
-                        sshcmd.Append(" chmod 600 ~/.ssh/authorized_keys;");
-                        sshcmd.Append(" chmod 600 ~/.ssh/authorized_key2;");
-                        sshcmd.Append(" echo '" + sshkey + "' >> ~/.ssh/authorized_keys;");
-                        sshcmd.Append(" echo '" + sshkey + "' >> ~/.ssh/authorized_keys2;");
-                        sshcmd.Append(" cat ~/.ssh/authorized_keys;");
-                        sshcmd.Append(" cat ~/.ssh/authorized_keys2;");
-
-                        var terminal = client.RunCommand(sshcmd.ToString());
-
-                        var output = terminal.Result;
-                        Console.WriteLine(output);
-                        client.Disconnect();
-                        client.Dispose();
-                        break; //IF WORKS BREAK LOOP
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("{0} FAILED: @HOST: {1}\n{3}", Thread.CurrentThread.Name, host, pw, e.ToString());
+                    }
+                    finally
+                    {
+                        //NONE
                     }
                 }
-                catch (Exception e)
-                {
-                    Console.WriteLine("THREAD FAILED: " + Thread.CurrentThread.Name + " @HOST: " + host.ToString() + "\n" + e.ToString());
-                }
-                finally
-                {
-                    Console.WriteLine("[[ THREAD COMPLETE: " + Thread.CurrentThread.Name + " @HOST: " + host.ToString() + " ]]");
-                    IsNotRUN();
-                }
             }
-            
+            catch
+            {
+                //NONE
+            }
+            finally
+            {
+                //NONE
+            }
+
+            Console.WriteLine("[[ {0} COMPLETED @HOST: {1} ]]", Thread.CurrentThread.Name, host);
+            IsNotRUN();//UPDATE POOL COUNTER
         }
 
 
@@ -535,6 +749,43 @@ namespace AUTODECK
             }
         }
 
+
+        public static void puttyProgress(object sender, DownloadProgressChangedEventArgs e)
+        {
+            Console.WriteLine("BYTES READ: " + e.BytesReceived + ": " + e.ProgressPercentage + "%");
+        }
+
+        public static void puttyDown(object sender, AsyncCompletedEventArgs e)
+        {
+            Console.WriteLine("\n\n\nPUTTY DOWNLOAD COMPLETE [PLEASE PRESS ENTER]");
+            PGO = true;
+        }
+
+        public static void _GetPutty()
+        {
+            //[[#AutoDECK]] GetPutty 
+            string curFile = dir3 + @"\putty-0.63-installer.exe";
+            if (!File.Exists(curFile))
+            {
+                Directory.SetCurrentDirectory(dir3);
+                Console.WriteLine("[GetPutty] Current directory: {0}", Directory.GetCurrentDirectory());
+
+                string url = "http://the.earth.li/~sgtatham/putty/latest/x86/putty-0.63-installer.exe";
+                string bin = "putty-0.63-installer.exe";
+                WebClient download = new WebClient();
+                download.DownloadFileCompleted += new AsyncCompletedEventHandler(puttyDown);
+                download.DownloadProgressChanged += new DownloadProgressChangedEventHandler(puttyProgress);
+                download.DownloadFileAsync(new Uri(url), bin);
+            }
+            else
+            {
+                PGO = true;
+            }
+        }
+
+
+
     }//CLASS END
+
 
 }//NAMESPACE END
