@@ -26,6 +26,8 @@ namespace AUTODECK
         public static Boolean MAKE = false;
         public static Boolean COMPLETE = false;
 
+        public static Boolean bit64 = false;
+
         public static Boolean PGO = false;
         public static Boolean pbit64 = false;
         public static Boolean GotPutty = false;
@@ -87,9 +89,19 @@ namespace AUTODECK
             }
 
 
+            //WEBCLIENT (DOWNLOAD RUNDECK)
+            Thread webthread = new Thread(() => _WebClient());
+            webthread.Name = "RUNDECK WEB THREAD";
+            webthread.Start();
+
+            //WEBCLIENT (DOWNLOAD PUTTY)
+            Thread getpthread = new Thread(() => _GetPutty());
+            getpthread.Name = "GET PUTTY THREAD";
+            getpthread.Start();
+
+
             //[[#AutoDECK]] GOT JAVA
             Boolean GotJava = false;
-            Boolean bit64 = false;
             string java64 = @"C:\Program Files (x86)\Java\jre6\bin\";
             string java86 = @"C:\Program Files\Java\jre6\bin\";
 
@@ -150,7 +162,7 @@ namespace AUTODECK
                 Console.ReadKey();
             }
 
-            
+
             //[[#AutoDECK]] MAKE CALLER BAT FILES
             Directory.SetCurrentDirectory(dir0);
             Console.WriteLine("[BAT FILE] Current directory: {0}", Directory.GetCurrentDirectory());
@@ -271,11 +283,6 @@ namespace AUTODECK
 
                     Console.WriteLine("\n\n\n\n\n\n\n\n\n\n\nPLEASE INSTALL Putty");
                     Console.WriteLine("  ......I'll WAIT UNTIL YOU DO\n[PLEASE PRESS ENTER]");
-
-                    //WEBCLIENT (DOWNLOAD PUTTY)
-                    Thread getpthread = new Thread(() => _GetPutty());
-                    getpthread.Name = "GET PUTTY THREAD";
-                    getpthread.Start();
                     
                     while (!PGO) { }
 
@@ -330,6 +337,7 @@ namespace AUTODECK
                 Console.ReadKey();
             }
 
+
             //[[#AutoDECK]] CONVERT putty public key
             string pattern1 = @"begin";
             string pattern2 = @"end";
@@ -354,6 +362,7 @@ namespace AUTODECK
             }
             Console.Write(sshkey);
 
+
             //KEEP UNIX KEY IN FILE
             string keystringFile = dir1 + @"\sshkey-string.txt";
             Console.WriteLine("\n MAKING KEY STRING FILE");
@@ -362,6 +371,7 @@ namespace AUTODECK
             ksfile.Close();
             Console.WriteLine(".........DONE MAKING KEY STRING FILE");
 
+
             //[[#AutoDECK]] (DONE) FOR NOW JUST LOAD LISTS
             Directory.SetCurrentDirectory(dir0);
             Console.WriteLine("[GET HOST INFO] Current directory: {0}", Directory.GetCurrentDirectory());
@@ -369,6 +379,7 @@ namespace AUTODECK
             var hostlist = File.ReadAllLines(HOSTFILE);
             List<object> hosts = new List<object>(hostlist); //HOST LIST
             //hosts.Add("14.0.0.126");
+
 
             Directory.SetCurrentDirectory(dir0);
             Console.WriteLine("[GET PASSWORD INFO] Current directory: {0}", Directory.GetCurrentDirectory());
@@ -431,17 +442,10 @@ namespace AUTODECK
                     break;
             }
 
-
-
             //MAKE RUNDECK resource.xml
             Thread makethread = new Thread(() => _MakeXML());
             makethread.Name = "RUNDECK MAKE THREAD";
             makethread.Start();
-
-            //WEBCLIENT (DOWNLOAD RUNDECK)
-            Thread webthread = new Thread(() => _WebClient());
-            webthread.Name = "RUNDECK WEB THREAD";
-            webthread.Start();
 
             //[[#AutoDECK]] START UP RUNDECK PROC w/FORK
             while (!GO) { }
@@ -465,6 +469,7 @@ namespace AUTODECK
 
         }//METHODS
 
+
         //[[#AutoDECK]]
         public class goodword //GOOD PASSWORD LIST
         {
@@ -475,6 +480,7 @@ namespace AUTODECK
         //new goodword {host = "", user = "", password="" }
         public static List<goodword> myword = new List<goodword> { }; //MAKE LIST FROM CLASS OBJ
 
+
         //[[#AutoDECK]] THREAD POOL
         public static void IsRUN() //ADD TO THREAD RUNNING COUNT
         {
@@ -483,6 +489,7 @@ namespace AUTODECK
                 TRUN++;
             }
         }
+
 
         //[[#AutoDECK]] THREAD POOL
         public static void IsNotRUN() //SUBTRACT FROM THREAD RUNNING COUNT
@@ -555,6 +562,7 @@ namespace AUTODECK
                 return sh;
             }
         }
+
 
         //[[#AutoDECK]] SSH THREADS
         public static void _tssh(string host)
@@ -718,12 +726,12 @@ namespace AUTODECK
         //[[#AutoDECK]] ASYNC DOWNLOAD PROGRESS
         public static void download_Progress(object sender, DownloadProgressChangedEventArgs e)
         {
-            Console.WriteLine("BYTES READ: " + e.BytesReceived + ": " + e.ProgressPercentage + "%");
+            //Console.WriteLine("BYTES READ: " + e.BytesReceived + ": " + e.ProgressPercentage + "%");
         }
         //[[#AutoDECK]] ASYNC DOWNLOAD DONE
         public static void download_FileCompleted(object sender, AsyncCompletedEventArgs e)
         {
-            Console.WriteLine("[AsyncCompletedEventArgs] Download completed!!!!!!!!!!!!!!!!!!!!!!!");
+            //Console.WriteLine("[AsyncCompletedEventArgs] Download completed!!!!!!!!!!!!!!!!!!!!!!!");
             GO = true;
         }
 
@@ -741,7 +749,7 @@ namespace AUTODECK
                 WebClient download = new WebClient();
                 download.DownloadFileCompleted += new AsyncCompletedEventHandler(download_FileCompleted);
                 download.DownloadProgressChanged += new DownloadProgressChangedEventHandler(download_Progress);
-                download.DownloadFileAsync(new Uri(url), bin);
+                download.DownloadFileAsync(new Uri(url), dir2 + @"\" + bin);
             }
             else
             {
@@ -752,34 +760,79 @@ namespace AUTODECK
 
         public static void puttyProgress(object sender, DownloadProgressChangedEventArgs e)
         {
-            Console.WriteLine("BYTES READ: " + e.BytesReceived + ": " + e.ProgressPercentage + "%");
+            //Console.WriteLine("BYTES READ: " + e.BytesReceived + ": " + e.ProgressPercentage + "%");
         }
 
         public static void puttyDown(object sender, AsyncCompletedEventArgs e)
         {
-            Console.WriteLine("\n\n\nPUTTY DOWNLOAD COMPLETE [PLEASE PRESS ENTER]");
+            //Console.WriteLine("\n\n\nPUTTY DOWNLOAD COMPLETE [PLEASE PRESS ENTER]");
             PGO = true;
         }
 
         public static void _GetPutty()
         {
-            //[[#AutoDECK]] GetPutty 
-            string curFile = dir3 + @"\putty-0.63-installer.exe";
-            if (!File.Exists(curFile))
+            //IF x86/x64: 
+            string putty64 = @"C:\Program Files (x86)\PuTTY\";
+            string putty86 = @"C:\Program Files\PuTTY\";
+            try
             {
-                Directory.SetCurrentDirectory(dir3);
-                Console.WriteLine("[GetPutty] Current directory: {0}", Directory.GetCurrentDirectory());
-
-                string url = "http://the.earth.li/~sgtatham/putty/latest/x86/putty-0.63-installer.exe";
-                string bin = "putty-0.63-installer.exe";
-                WebClient download = new WebClient();
-                download.DownloadFileCompleted += new AsyncCompletedEventHandler(puttyDown);
-                download.DownloadProgressChanged += new DownloadProgressChangedEventHandler(puttyProgress);
-                download.DownloadFileAsync(new Uri(url), bin);
+                Directory.SetCurrentDirectory(putty64);
+            }
+            catch
+            {
+                //NONE
+            }
+            //
+            //Console.WriteLine("[GOT Putty] Current directory: {0}", Directory.GetCurrentDirectory());
+            if (File.Exists("puttygen.exe"))
+            {
+                pbit64 = true;
+                GotPutty = true;
             }
             else
             {
-                PGO = true;
+                try
+                {
+                    Directory.SetCurrentDirectory(putty86);
+                    Console.WriteLine("[GOT Putty] Current directory: {0}", Directory.GetCurrentDirectory());
+                }
+                catch
+                {
+                    //NONE
+                }
+                //
+                if (File.Exists("puttygen.exe"))
+                {
+                    pbit64 = false;
+                    GotPutty = true;
+                }
+                else
+                {
+                    GotPutty = false;
+                }
+            }
+
+
+            if (!GotPutty)
+            {
+                //[[#AutoDECK]] GetPutty 
+                string curFile = dir3 + @"\putty-0.63-installer.exe";
+                if (!File.Exists(curFile))
+                {
+                    Directory.SetCurrentDirectory(dir3);
+                    Console.WriteLine("[GetPutty] Current directory: {0}", Directory.GetCurrentDirectory());
+
+                    string url = "http://the.earth.li/~sgtatham/putty/latest/x86/putty-0.63-installer.exe";
+                    string bin = "putty-0.63-installer.exe";
+                    WebClient download = new WebClient();
+                    download.DownloadFileCompleted += new AsyncCompletedEventHandler(puttyDown);
+                    download.DownloadProgressChanged += new DownloadProgressChangedEventHandler(puttyProgress);
+                    download.DownloadFileAsync(new Uri(url), dir3 + @"\" + bin);
+                }
+                else
+                {
+                    PGO = true;
+                }
             }
         }
 

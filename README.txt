@@ -1,5 +1,5 @@
 
-AutoDECK is a small automation tool for "RUNDECK(rundeck.org/)" made with .NET(C#) ....... Basically it does the setup work for you from 5 to 5000 hosts! ;) 
+AutoDECK is a small automation tool for "RUNDECK(rundeck.org/)" in made .NET(C#) ....... Basically it does the setup work for you from 5 to 5000 hosts! ;) 
 
 DEPS: 
 You will need the full "Putty" install and "Java 1.6 (for Rundeck)" on a Windows system.
