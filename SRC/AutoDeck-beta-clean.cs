@@ -2,16 +2,22 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
+using System.Xml.Linq;
+using System.Linq;
 using System.Threading;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Reflection;
+
 using Renci.SshNet;
+
+using dotNET_RSA_KEY;
 
 namespace AUTODECK
 {
@@ -51,13 +57,14 @@ namespace AUTODECK
         //[[#AutoDECK]] COUNT ALIVE THREADS PAUSE LOOP UNTIL THAN MAX
         public static int OD = 0;
         public static int OVER = 200; //OVER DRIVE
-        public static int TMAX = 5; //THREAD MAX
+        public static int TMAX = 20; //THREAD MAX
         public static int TRUN = 0; //RUNNING THREAD COUNT
 
         //[[#AutoDECK]] THREAD POOL LOCK
         public static Object thisLock = new Object();
         public static Object wordLock = new Object();
         public static Object listLock = new Object();
+        public static Object Lock_MakeXML = new Object();
 
         static void Main(string[] args)
         {
@@ -90,14 +97,26 @@ namespace AUTODECK
 
 
             //WEBCLIENT (DOWNLOAD RUNDECK)
-            Thread webthread = new Thread(() => _WebClient());
+            Thread webthread = new Thread(() => WebClient());
             webthread.Name = "RUNDECK WEB THREAD";
             webthread.Start();
 
             //WEBCLIENT (DOWNLOAD PUTTY)
-            Thread getpthread = new Thread(() => _GetPutty());
+            Thread getpthread = new Thread(() => GetPutty());
             getpthread.Name = "GET PUTTY THREAD";
             getpthread.Start();
+
+            //MAKE SSH KEYS
+            //string ssh = MAKE_RSA_KEY.MAKE_KEY(); 
+            //sshkey.Append(ssh);
+
+            //MAKE SSH KEYS : THREAD
+            string ssh = null; 
+            Thread makekeythread = new Thread(() => ssh = MAKE_RSA_KEY.MAKE_KEY());
+            makekeythread.Name = "MAKE RSA KEY THREAD";
+            makekeythread.Start();
+            //makekeythread.Join(); //RETURN SSH KEY LATER
+            //sshkey.Append(ssh);
 
 
             //[[#AutoDECK]] GOT JAVA
@@ -166,27 +185,33 @@ namespace AUTODECK
             //[[#AutoDECK]] MAKE CALLER BAT FILES
             Directory.SetCurrentDirectory(dir0);
             Console.WriteLine("[BAT FILE] Current directory: {0}", Directory.GetCurrentDirectory());
-
+            //string rdb = dir0 + @"RUNDECK-START.bat";
             Console.WriteLine("MAKING RUNDECK BAT FILE");
-            System.IO.StreamWriter rdfile = new System.IO.StreamWriter(@"RUNDECK-START.bat");
             StringBuilder rdeck = new StringBuilder();
-            rdfile.WriteLine("cd " + dir2);
-            rdeck.Append('"');
-            if (bit64)
+            try
             {
-                rdeck.Append(@"C:\Program Files (x86)\Java\jre6\bin\java.exe");
-            }
-            else
+                System.IO.StreamWriter rdfile = new System.IO.StreamWriter(@"RUNDECK-START.bat");
+                rdfile.WriteLine("cd " + dir2);
+                rdeck.Append('"');
+                if (bit64)
+                {
+                    rdeck.Append(@"C:\Program Files (x86)\Java\jre6\bin\java.exe");
+                }
+                else
+                {
+                    rdeck.Append(@"C:\Program Files\Java\jre6\bin\java.exe");
+                }
+                rdeck.Append('"');
+                rdeck.Append(" -jar rundeck-launcher-2.3.2.jar");
+                rdfile.WriteLine(rdeck);
+                rdfile.WriteLine("pause");
+                rdfile.Close();
+                Console.WriteLine(".........DONE MAKING RUNDECK BAT FILE");
+            }catch(Exception bat)
             {
-                rdeck.Append(@"C:\Program Files\Java\jre6\bin\java.exe");
+                Console.WriteLine("PROBLEM WITH RUNDECK BAT FILE:\n {0}",bat);
             }
-            rdeck.Append('"');
-            rdeck.Append(" -jar rundeck-launcher-2.3.2.jar");
-            rdfile.WriteLine(rdeck);
-            rdfile.WriteLine("pause");
-            rdfile.Close();
-            Console.WriteLine(".........DONE MAKING RUNDECK BAT FILE");
-
+            
      
             //[[#AutoDECK]] START UP NOTEPAD FOR HOST AND PASSWORD LIST
             string hFile = dir0 + @"\hostfile.txt";
@@ -200,7 +225,7 @@ namespace AUTODECK
                 xpfile.WriteLine("password2");
                 xpfile.WriteLine("password3");
                 xpfile.WriteLine("root");
-                xpfile.WriteLine("123456");
+                xpfile.Write("123456");
                 xpfile.Close();
 
                 System.IO.StreamWriter xhfile = new System.IO.StreamWriter(hFile);
@@ -208,13 +233,13 @@ namespace AUTODECK
                 xhfile.WriteLine("hostname1");
                 xhfile.WriteLine("hostname2");
                 xhfile.WriteLine("hostname3");
-                xhfile.WriteLine("or-ipaddress");
+                xhfile.WriteLine("use-hostname-or-ipaddress");
                 xhfile.WriteLine("14.0.0.126");
                 xhfile.WriteLine("14.0.0.138");
                 xhfile.WriteLine("14.0.0.131");
                 xhfile.WriteLine("14.0.0.103");
                 xhfile.WriteLine("14.0.0.141");
-                xhfile.WriteLine("14.0.0.130");
+                xhfile.Write("14.0.0.130");
                 xhfile.Close();
 
                 System.Diagnostics.Process HostLlist = new System.Diagnostics.Process();
@@ -234,7 +259,9 @@ namespace AUTODECK
                 HostLlist.WaitForExit();
             }
 
-            
+            //PUTTY IS OPTIONAL (AS WE NOW MAKE OUR OWN RSA KEY)
+
+            /*
             string putty64 = @"C:\Program Files (x86)\PuTTY\";
             string putty86 = @"C:\Program Files\PuTTY\";
 
@@ -371,8 +398,10 @@ namespace AUTODECK
             ksfile.Close();
             Console.WriteLine(".........DONE MAKING KEY STRING FILE");
 
+            */
 
-            //[[#AutoDECK]] (DONE) FOR NOW JUST LOAD LISTS
+
+            //[[#AutoDECK]] LOAD LISTS
             Directory.SetCurrentDirectory(dir0);
             Console.WriteLine("[GET HOST INFO] Current directory: {0}", Directory.GetCurrentDirectory());
             string HOSTFILE = "hostfile.txt";
@@ -392,7 +421,15 @@ namespace AUTODECK
             user.Add("root");
 
 
-            //[[#AutoDECK]] (My) THREAD POOL : RUN NO MORE THAN MAX(TMAX)
+            makekeythread.Join(); //RETURN SSHKEY HERE
+            sshkey.Append(ssh);
+
+
+            //SSH CLIENT CONF THREADS
+
+            //These Threads MAKE/UPDATE RUNDECK resource.xml
+
+            //[[#AutoDECK]] (My) THREAD POOL : RUN NO MORE THAN YOU NEED TO
             int t = 0;
             foreach (string host in hosts) //MAKE THREAD COUNT
                               t++;
@@ -410,42 +447,36 @@ namespace AUTODECK
                     {
                         if (TMAX <= OVER) 
                         { 
-                            TMAX += 2 ; 
+                            TMAX += 2; 
                             OD = 0; 
                             Console.WriteLine("ADDED MORE THREADS#: " + TMAX); 
                         }
                     }
                         
                 } //BLOCK THREADS AT MAX
+                Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("RUNNING THREAD #: " + i);
-                threads[i] = new Thread(() => _tssh(host));
+                Console.ResetColor();
+                threads[i] = new Thread(() => tssh(host));
                 threads[i].Name = i.ToString(); //SET THREAD NUM
                 threads[i].Start();
                 i++;
             }
 
 
-            //MAKE SURE ALL THREADS IN POOL ARE DEAD
-            while(true)
-            { 
-                int tha = t -1;
-                int thd = t -1;
-                for ( ; tha > 0 ; tha-- )
-                {
-                    //Console.WriteLine("THREAD DEAD: " + tha);
-                        if (!threads[tha].IsAlive)
-                        {
-                            thd--;
-                        }
-                }
-                if(thd <= 0)
-                    break;
-            }
+            //MAKE RUNDECK CONFIG FILES
+            Thread cfgthread = new Thread(() => MakeCFG());
+            cfgthread.Name = "RUNDECK CFG THREAD";
+            cfgthread.Start();
 
-            //MAKE RUNDECK resource.xml
-            Thread makethread = new Thread(() => _MakeXML());
-            makethread.Name = "RUNDECK MAKE THREAD";
-            makethread.Start();
+
+            if ((!GO) && (!COMPLETE))
+            {
+                Console.ForegroundColor = ConsoleColor.DarkMagenta;
+                Console.WriteLine("\n[[WAITING FOR DOWNLOAD]]");
+                Console.ResetColor();
+                //Console.WriteLine("\n\n[[SEE: http://rundeck.org/docs/]]");
+            }
 
             //[[#AutoDECK]] START UP RUNDECK PROC w/FORK
             while (!GO) { }
@@ -454,14 +485,41 @@ namespace AUTODECK
             Console.WriteLine("[START RUNDECK] Current directory: {0}", Directory.GetCurrentDirectory());
             System.Diagnostics.Process _RunDeck = new System.Diagnostics.Process();
             _RunDeck.StartInfo.FileName = "cmd";
-            _RunDeck.StartInfo.Arguments = "/c START cmd /T:6b  /k " + rdeck;
+            _RunDeck.StartInfo.Arguments = "/c START cmd /T:6b /k " + rdeck;
             Thread rundeckthread = new Thread(() => _RunDeck.Start());
             rundeckthread.Name = "RUNDECK THREAD";
             rundeckthread.Start();
-        
+
+
+            //WAIT FOR SSH CLIENT CONF THREADS
+            int tha = t - 1;
+            int thd = t - 1;
+            for (; tha > 0; tha--)
+            {
+                //Console.WriteLine("THREAD DEAD: " + tha);
+                if (!threads[tha].IsAlive)
+                {
+                    thd--;
+                }
+                Console.ForegroundColor = ConsoleColor.DarkMagenta;
+                if (threads[tha].IsAlive)
+                    Console.WriteLine("\n[[WAITING ON SSH CLIENT CONF THREAD]]: {0}", threads[tha].Name);
+                Console.ResetColor();
+            }
+
+            //WAIT FOR SSH CLIENT CONF THREADS
+            int TH = 0; //THREAD COUNT
+            foreach (string host in hosts)
+            {
+                threads[TH].Join();
+                TH++;
+            }
+
+
             //END           
             Console.WriteLine("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nALL DONE\nGOTO: http://127.0.0.1:4440\nUserName: admin\nPassWord: admin\n[[PRESS ENTER (to exit)]]");
             Console.WriteLine("\n\n[[SEE: http://rundeck.org/docs/]]");
+            Console.WriteLine("(Optional) Install Putty: {0}", dir3);
             Console.ReadKey();
 
 
@@ -480,6 +538,13 @@ namespace AUTODECK
         //new goodword {host = "", user = "", password="" }
         public static List<goodword> myword = new List<goodword> { }; //MAKE LIST FROM CLASS OBJ
 
+        public static void addPASS(object host, object user, object pw)
+        {
+            lock (wordLock)
+            {
+                myword.Add(new goodword { ghost = host, guser = user, gpassword = pw }); //UPDATE PASSWORD LIST
+            }
+        }
 
         //[[#AutoDECK]] THREAD POOL
         public static void IsRUN() //ADD TO THREAD RUNNING COUNT
@@ -489,7 +554,6 @@ namespace AUTODECK
                 TRUN++;
             }
         }
-
 
         //[[#AutoDECK]] THREAD POOL
         public static void IsNotRUN() //SUBTRACT FROM THREAD RUNNING COUNT
@@ -501,15 +565,6 @@ namespace AUTODECK
                     TMAX -= 5;
                 else if (TMAX > 51)
                     TMAX -= 1;
-            }
-        }
-
-
-        public static void addPASS(object host, object user, object pw)
-        {
-            lock (wordLock)
-            {
-                myword.Add(new goodword { ghost = host, guser = user, gpassword = pw }); //UPDATE PASSWORD LIST
             }
         }
 
@@ -565,7 +620,7 @@ namespace AUTODECK
 
 
         //[[#AutoDECK]] SSH THREADS
-        public static void _tssh(string host)
+        public static void tssh(string host)
         {
             IsRUN(); //UPDATE POOL COUNTER
 
@@ -584,18 +639,24 @@ namespace AUTODECK
                         {
                             try
                             {
-                                var jim = new SshClient(host, user, pw);
+                                var ssc = new SshClient(host, user, pw);
                                 client.Connect(); //TRY CONNECTION
                                 //Console.WriteLine("{0} CONNECTED: [GOOD PASSWORD: {2}] [HOST: {1}]", Thread.CurrentThread.Name, host, pw);
-                                addPASS(host, user, pw);
 
+                                List<goodword> aword = new List<goodword> { };
+                                aword.Add(new goodword { ghost = host, guser = user, gpassword = pw }); //LIST FOR "LATER" UPDATING CONFIGS
+                                MakeXML(aword);
+                                //Console.WriteLine("[I AM DONE]: {0}", Thread.CurrentThread.Name);
                                 
                             }
                             //catch (Exception con)
                             catch
                             {
                                 //Console.WriteLine("SSH CONNECTION FAILURE: [BAD PASSWORD?  " + pw + "] [HOST: " + host + "]" + con);
-                                Console.WriteLine("{0} SSH CONNECTION FAILURE: [BAD PASSWORD? {2}] [HOST: {1}]", Thread.CurrentThread.Name, host, pw);
+                                Console.ForegroundColor = ConsoleColor.Yellow;
+                                Console.WriteLine("THREAD# {0} SSH CONNECTION FAILURE: [HOST: {1}] (BAD PASSWORD?)", Thread.CurrentThread.Name, host);
+                                //Console.WriteLine("{0} SSH CONNECTION FAILURE: [BAD PASSWORD? {2}] [HOST: {1}]", Thread.CurrentThread.Name, host, pw);
+                                Console.ResetColor();
                                 continue; //IF CONNECTION FAILS NEXT LOOP
                             }
 
@@ -623,7 +684,9 @@ namespace AUTODECK
                     }
                     catch (Exception e)
                     {
+                        Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine("{0} FAILED: @HOST: {1}\n{3}", Thread.CurrentThread.Name, host, pw, e.ToString());
+                        Console.ResetColor();
                     }
                     finally
                     {
@@ -640,14 +703,17 @@ namespace AUTODECK
                 //NONE
             }
 
+            //Console.BackgroundColor = ConsoleColor.Blue;
+            Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine("[[ {0} COMPLETED @HOST: {1} ]]", Thread.CurrentThread.Name, host);
+            Console.ResetColor();
             IsNotRUN();//UPDATE POOL COUNTER
         }
 
 
-        public static void _MakeXML()
+        public static void MakeCFG()
         {
-            while (TRUN != 0){}; //WAIT FOR THREAD POOL
+            //while (TRUN != 0){}; //WAIT FOR THREAD POOL
             while (!GO){}; //WAIT FOR GO
 
             string autoETC = dir2 + @"\projects\AutoDECK\etc\";
@@ -666,7 +732,7 @@ namespace AUTODECK
             string npattern = @"\\";
             string nreplacement = @"\\";
             Regex nrgx = new Regex(npattern);
-            string nresult = nrgx.Replace(dir1 + @"\id_dsa.ppk", nreplacement);
+            string nresult = nrgx.Replace(dir1 + @"\AutoDECK_dsa.ppk", nreplacement);
             string rdkey = nresult.Replace(":", @"\:");
             Console.WriteLine(rdkey);
 
@@ -694,34 +760,86 @@ namespace AUTODECK
             xfile.Close();
             Console.WriteLine(".........DONE MAKING project.properties FILE");
 
-            //[[#AutoDECK]] MAKE XML FILE
-            Directory.SetCurrentDirectory(autoETC);
-            Console.WriteLine("Current directory: {0}", Directory.GetCurrentDirectory());
-
-            Console.WriteLine("MAKING RUNDECK XML FILE");
-            XmlTextWriter xwr = new XmlTextWriter("resources.xml", Encoding.UTF8);
-            xwr.Formatting = Formatting.Indented;
-            xwr.WriteStartDocument();
-            xwr.WriteStartElement("project"); //<project>
-            foreach (goodword w in myword)
-            {
-                xwr.WriteStartElement("node"); //<name>
-                xwr.WriteAttributeString("name", (string)w.ghost); //Attribute Must be before
-                xwr.WriteAttributeString("description", "");
-                xwr.WriteAttributeString("tags", "");
-                xwr.WriteAttributeString("hostname", (string)w.ghost); //Attribute Must be after Element
-                xwr.WriteAttributeString("osArch", "");
-                xwr.WriteAttributeString("osFamily", "");
-                xwr.WriteAttributeString("osName", "");
-                xwr.WriteAttributeString("osVersion", "");
-                xwr.WriteAttributeString("username", (string)w.guser); //Attribute Must be after Element
-                xwr.WriteEndElement();
-            }
-
-            xwr.Close();
-            Console.WriteLine(".....DONE MAKING RUNDECK XML FILE");
             COMPLETE = true;
         }
+
+        public static void MakeXML(List<goodword> aword)
+        {
+            lock (Lock_MakeXML)//NO WAIT JUST LOCK
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine("[MAKING/UPDATING RUNDECK XML FILE] I AM THREAD: {0}", Thread.CurrentThread.Name);
+                Console.ResetColor();
+
+                foreach (goodword w in aword) {
+                    addPASS(w.ghost, w.guser, w.gpassword);
+                }
+
+                string autoETC = dir2 + @"\projects\AutoDECK\etc\";
+                Directory.CreateDirectory(autoETC);
+                //Console.WriteLine("MAKING RUNDECK XML FILE");
+
+                //XmlTextWriter xwr = new XmlTextWriter(autoETC + "resources.xml", Encoding.UTF8);
+
+                XmlTextWriter xwr;
+                string xfilename = autoETC + "resources.xml";
+
+                if (File.Exists(xfilename))
+                {
+                    XDocument xDocument = XDocument.Load(xfilename);
+                    XElement root = xDocument.Element("project");
+                    IEnumerable<XElement> rows = root.Descendants("node");
+                    XElement firstRow = rows.First(); //START AT TOP (FASTER)
+                    //XElement lastRow = rows.Last(); //START AT BOTTOM
+
+                    //foreach (goodword w in myword)
+                    foreach (goodword w in aword)
+                    {
+                        firstRow.AddBeforeSelf(
+                            //lastRow.AddAfterSelf(
+                           new XElement("node",
+                             new XAttribute("name", (string)w.ghost),
+                             new XAttribute("description", ""),
+                             new XAttribute("tags", ""),
+                             new XAttribute("hostname", (string)w.ghost),
+                             new XAttribute("osArch", ""),
+                             new XAttribute("osFamily", ""),
+                             new XAttribute("osName", ""),
+                             new XAttribute("osVersion", ""),
+                             new XAttribute("username", (string)w.guser)));
+                    }
+                    xDocument.Save(xfilename);
+                    myword.Clear();
+                }
+                else
+                {
+                    xwr = new XmlTextWriter(xfilename, Encoding.UTF8);
+                    xwr.Formatting = Formatting.Indented;
+                    xwr.WriteStartDocument();
+                    xwr.WriteStartElement("project"); //<project>
+
+                    foreach (goodword w in aword)
+                    {
+                        xwr.WriteStartElement("node"); //<name>
+                        xwr.WriteAttributeString("name", (string)w.ghost); //Attribute Must be before
+                        xwr.WriteAttributeString("description", "");
+                        xwr.WriteAttributeString("tags", "");
+                        xwr.WriteAttributeString("hostname", (string)w.ghost); //Attribute Must be after Element
+                        xwr.WriteAttributeString("osArch", "");
+                        xwr.WriteAttributeString("osFamily", "");
+                        xwr.WriteAttributeString("osName", "");
+                        xwr.WriteAttributeString("osVersion", "");
+                        xwr.WriteAttributeString("username", (string)w.guser); //Attribute Must be after Element
+                        xwr.WriteEndElement();
+                    }
+                    xwr.Close();
+                    myword.Clear();
+                }
+                Console.WriteLine(".....DONE MAKING/UPDATING RUNDECK XML FILE");
+                //COMPLETE = true;
+            }
+        }
+
 
         //[[#AutoDECK]] ASYNC DOWNLOAD PROGRESS
         public static void download_Progress(object sender, DownloadProgressChangedEventArgs e)
@@ -735,7 +853,7 @@ namespace AUTODECK
             GO = true;
         }
 
-        public static void _WebClient()
+        public static void WebClient()
         {
             //[[#AutoDECK]] WEBCLIENT 
             string curFile = dir2 + @"\rundeck-launcher-2.3.2.jar";
@@ -769,7 +887,7 @@ namespace AUTODECK
             PGO = true;
         }
 
-        public static void _GetPutty()
+        public static void GetPutty()
         {
             //IF x86/x64: 
             string putty64 = @"C:\Program Files (x86)\PuTTY\";
@@ -842,3 +960,188 @@ namespace AUTODECK
 
 
 }//NAMESPACE END
+
+
+
+
+
+//MAKE RSA KEYS
+namespace dotNET_RSA_KEY
+{
+    class MAKE_RSA_KEY
+    {
+        //DIR VARS
+        public static string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        public static string dir0 = desktop + @"\AutoDECK";
+        public static string dir1 = desktop + @"\AutoDECK\SSH_KEY";
+        public static string dir2 = desktop + @"\AutoDECK\RUNDECK";
+        public static string dir3 = desktop + @"\AutoDECK\BIN";
+
+        //static string Main(string[] args)
+        public static string MAKE_KEY()
+        {
+
+            //MAKE RSA KEY THEN EXPORT TO PUTTY KEY 
+
+            // Create a new key pair on target CSP
+            CspParameters myCspParams = new CspParameters();
+            myCspParams.ProviderType = 1; // PROV_RSA_FULL 
+            myCspParams.Flags = CspProviderFlags.UseArchivableKey;
+            myCspParams.KeyNumber = (int)KeyNumber.Exchange;
+
+            string Comment = "autodeck key";
+
+            RSACryptoServiceProvider myRSA = new RSACryptoServiceProvider(2048, myCspParams); //KEY SIZE
+            RSAParameters myRSAParams = myRSA.ExportParameters(true);
+            //RAW KEY DATA
+            //
+            //myRSAParams.D  
+            //myRSAParams.DP
+            //myRSAParams.DQ
+            //myRSAParams.Exponent
+            //myRSAParams.InverseQ
+            //myRSAParams.Modulus
+            //myRSAParams.P
+            //myRSAParams.Q
+
+            //RSA KEY ToXmlString            
+            //Console.WriteLine("\n\n\n\n\n\nTHIS IS THE TEXT KEY:\n{0}", myRSA.ToXmlString(true));
+
+            //MAKE PUTTY PRV KEY
+
+            //GET PUBLIC KEY
+            var publicParameters = myRSA.ExportParameters(false);
+            byte[] publicBuffer = new byte[3 + 7 + 4 + 1 + publicParameters.Exponent.Length + 4 + 1 + publicParameters.Modulus.Length + 1];
+
+            using (var bw = new BinaryWriter(new MemoryStream(publicBuffer)))
+            {
+                bw.Write(new byte[] { 0x00, 0x00, 0x00 });
+                bw.Write("ssh-rsa");
+                PutPrefixed(bw, publicParameters.Exponent, true);
+                PutPrefixed(bw, publicParameters.Modulus, true);
+            }
+            var publicBlob = System.Convert.ToBase64String(publicBuffer);
+
+            //GET PRIVATE KEY
+            var privateParameters = myRSA.ExportParameters(true);
+            byte[] privateBuffer = new byte[4 + 1 + privateParameters.D.Length + 4 + 1 + privateParameters.P.Length + 4 + 1 + privateParameters.Q.Length + 4 + 1 + privateParameters.InverseQ.Length];
+
+            using (var bw = new BinaryWriter(new MemoryStream(privateBuffer)))
+            {
+                PutPrefixed(bw, privateParameters.D, true);
+                PutPrefixed(bw, privateParameters.P, true);
+                PutPrefixed(bw, privateParameters.Q, true);
+                PutPrefixed(bw, privateParameters.InverseQ, true);
+            }
+            var privateBlob = System.Convert.ToBase64String(privateBuffer);
+
+            HMACSHA1 hmacsha1 = new HMACSHA1(new SHA1CryptoServiceProvider().ComputeHash(Encoding.ASCII.GetBytes("putty-private-key-file-mac-key")));
+            //byte[] bytesToHash = new byte[4 + 7 + 4 + 4 + 4 + this.Comment.Length + 4 + publicBuffer.Length + 4 + privateBuffer.Length];
+            //byte[] bytesToHash = new byte[4 + 7 + 4 + 4 + 4 + 4 + publicBuffer.Length + 4 + privateBuffer.Length];
+            byte[] bytesToHash = new byte[4 + 7 + 4 + 4 + 4 + Comment.Length + 4 + publicBuffer.Length + 4 + privateBuffer.Length];
+
+            using (var bw = new BinaryWriter(new MemoryStream(bytesToHash)))
+            {
+                PutPrefixed(bw, Encoding.ASCII.GetBytes("ssh-rsa"));
+                PutPrefixed(bw, Encoding.ASCII.GetBytes("none"));
+                //PutPrefixed(bw, Encoding.ASCII.GetBytes(this.Comment));
+                PutPrefixed(bw, Encoding.ASCII.GetBytes(Comment));
+                PutPrefixed(bw, publicBuffer);
+                PutPrefixed(bw, privateBuffer);
+            }
+
+            var hash = string.Join("", hmacsha1.ComputeHash(bytesToHash).Select(x => string.Format("{0:x2}", x)));
+
+            var sb = new StringBuilder();
+            sb.AppendLine("PuTTY-User-Key-File-2: ssh-rsa");
+            sb.AppendLine("Encryption: none");
+            sb.AppendLine("Comment: " + Comment);
+
+            var publicLines = SpliceText(publicBlob, 64);
+            sb.AppendLine("Public-Lines: " + publicLines.Length);
+            foreach (var line in publicLines)
+            {
+                sb.AppendLine(line);
+            }
+
+            var privateLines = SpliceText(privateBlob, 64);
+            sb.AppendLine("Private-Lines: " + privateLines.Length);
+            foreach (var line in privateLines)
+            {
+                sb.AppendLine(line);
+            }
+
+            sb.AppendLine("Private-MAC: " + hash);
+
+            //Console.WriteLine("\n\n\n\n[ PUTTY PRV STRING ]: \n{0}", sb.ToString());
+            
+            //KEEP UNIX KEY IN FILE
+            string ppk = dir1 + @"\AutoDECK_dsa.ppk";
+            Console.WriteLine("\n MAKING KEY PPK FILE");
+            System.IO.StreamWriter ppkfile = new System.IO.StreamWriter(ppk);
+            //System.IO.StreamWriter ppkfile = new System.IO.StreamWriter("autdeck_dsa.ppk");
+            ppkfile.WriteLine(sb.ToString());
+            ppkfile.Close();
+            Console.WriteLine(".........DONE MAKING PPK FILE");
+
+            //[[#AutoDECK]] CONVERT putty public key
+            string pattern1 = @"Public-Lines:";
+            string pattern2 = @"Private-Lines:";
+            StringBuilder sshkey = new StringBuilder();
+            Regex rgx1 = new Regex("(?ix)" + pattern1);
+            Regex rgx2 = new Regex("(?ix)" + pattern2);
+            //String or StringBuilder to stream/memorystream
+            string myString = sb.ToString();
+            byte[] byteArray = Encoding.ASCII.GetBytes(myString);
+            MemoryStream stream = new MemoryStream(byteArray);
+            Boolean NEXT = false;
+            Boolean DUMP = false;
+            using (StreamReader sr = new StreamReader(stream))
+            {
+                string line;
+                sshkey.Append("ssh-rsa ");
+                while (( line = sr.ReadLine()) != null)
+                {
+                    if (rgx2.IsMatch(line))
+                        DUMP = true;
+                    if (DUMP) continue;
+                    if (NEXT)
+                        sshkey.Append(line);
+                    if (rgx1.IsMatch(line))
+                        NEXT = true;
+                }
+                sshkey.Append(" autodeck@pretend-machine.com");
+            }
+            Console.Write(sshkey);
+
+            //KEEP UNIX KEY IN FILE
+            string keystringFile = dir1 + @"\sshkey-string.txt";
+            Console.WriteLine("\n MAKING KEY STRING FILE");
+            System.IO.StreamWriter ksfile = new System.IO.StreamWriter(keystringFile);
+            //System.IO.StreamWriter ksfile = new System.IO.StreamWriter("sshkey-string.txt");
+            ksfile.WriteLine(sshkey);
+            ksfile.Close();
+            Console.WriteLine(".........DONE MAKING KEY STRING FILE");
+
+            return sshkey.ToString(); //RETURN STRING
+
+
+        }
+
+        private static void PutPrefixed(BinaryWriter bw, byte[] bytes, bool addLeadingNull = false)
+        {
+            bw.Write(BitConverter.GetBytes(bytes.Length + (addLeadingNull ? 1 : 0)).Reverse().ToArray());
+            if (addLeadingNull)
+                bw.Write(new byte[] { 0x00 });
+            bw.Write(bytes);
+        }
+
+        private static string[] SpliceText(string text, int lineLength)
+        {
+            return Regex.Matches(text, ".{1," + lineLength + "}").Cast<Match>().Select(m => m.Value).ToArray();
+        }
+
+    }//CLASS END
+
+}//NAMESPACE END
+

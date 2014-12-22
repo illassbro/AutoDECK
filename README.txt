@@ -2,15 +2,11 @@
 AutoDECK is a small automation tool for "RUNDECK(rundeck.org/)" made with .NET(C#) ....... Basically it does the setup work for you from 5 to 5000 hosts! ;) 
 
 DEPS: 
-You will need the full "Putty" install and "Java 1.6 (for Rundeck)" on a Windows system.
+You will need "Java 1.6 (for Rundeck)" on a Windows system.
 
 #JAVA
 http://www.oracle.com/technetwork/java/javase/downloads/java-archive-downloads-javase6-419409.html#jre-6u45-oth-JPR
 http://www.oracle.com/technetwork/java/javase/archive-139210.html
-
-#PUTTY (Use The Full Installer)
-http://the.earth.li/~sgtatham/putty/latest/x86/putty-0.63-installer.exe
-http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html
 
 
 
