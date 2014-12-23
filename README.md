@@ -1,7 +1,7 @@
 AutoDECK
 ========
 
-AutoDECK is a automation tool for "RUNDECK(rundeck.org)" made with .NET(C#)
+AutoDECK is a automation tool for "RUNDECK(http://rundeck.org)" made with .NET(C#)
 
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=FSgPDadcEek" target="_blank"><img src="http://img.youtube.com/vi/FSgPDadcEek/0.jpg" alt="AutoDECK" width="240" height="180" border="10" /></a>
 
@@ -9,7 +9,7 @@ AutoDECK is a automation tool for "RUNDECK(rundeck.org)" made with .NET(C#)
 
 ## Description:
 
-AutoDECK is a automation tool for "RUNDECK(rundeck.org)"; basically, it does the setup work for you from 5 to 5000 hosts! 
+AutoDECK is a automation tool for "RUNDECK(http://rundeck.org)"; basically, it does the setup work for you from 5 to 5000 hosts! 
 
 
 ##Requirements:
