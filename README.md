@@ -48,12 +48,13 @@ So if you have one password for every host it will be fast but if you have diffe
 try to make the two files (hostfile/passfile) match host to password line for line else, it will try passwords in the list until 
 it finds one that works and this could take a long time depending on how many password you have.
 
+```
 hostfile   passfile
 --------   --------
 host1      pass1
 host2	   pass2
 host3           <===== If no password is here expect that the tread will try both pass1 & pass2
-
+```
 
 ##Known Issues (Rundeck/jsch):
 
