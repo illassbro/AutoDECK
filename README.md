@@ -34,18 +34,19 @@ None. This tool does automates a basic install of Rundeck.
 
 ##How to use it?:
 
-Install Java 1.6; Download AutoDECK, Unzip, Dubbed Click...... add your host list(IPs or hostnames) 
-and password list in the note pad pop ups and your are done. Enjoy your automated setup.
+Install Java 1.6; Download AutoDECK, Unzip, Dubbed Click...... As it runs, add your host list(IPs or hostnames) 
+and password list in the notepad pop-ups and your are done. Enjoy your automated setup!
 
 (Please see the video)
 
 
 ##Known Issues (AutoDECK):
 
-One thing to note is that the tool will try all known password on every host; so if you have one password 
-for every host it will be fine but if you have different passwords for each host try to make the two files 
-(hostfile/passfile) match line for line else it will try passwords in the list until it finds one that works
-this could take a long time depending on how many password you have.
+##### "One thing to note is that the tool will try all listed passwords on every host until it finds one that works."
+ 
+So if you have one password for every host it will be fast but if you have different passwords for each host 
+try to make the two files (hostfile/passfile) match line for line else, it will try passwords in the list until 
+it finds one that works and this could take a long time depending on how many password you have.
 
 
 ##Known Issues (Rundeck/jsch):
@@ -53,7 +54,7 @@ this could take a long time depending on how many password you have.
 [[ "SSHProtocolFailure: Algorithm negotiation fail" -> RUNDECK ERROR ]]
 
 This seems to be a known issue with SSH-1.99-OpenSSH_6.7 as it uses a newer "Diffie-Hellman group exchange" 
-Most of my hosts had SSH-1.99-OpenSSH_6.4 and below.... and work fine.
+Most of my hosts that use SSH-1.99-OpenSSH_6.4 and below work fine.
 
 RUNDECK uses "jsch" as for the SSH protocol... "jsch" does not seem to support the newer SSH2 protocol key exchange yet.
 
