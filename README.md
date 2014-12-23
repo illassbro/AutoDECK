@@ -64,7 +64,7 @@ host3           <===== If no password is here expect that
 #####[[ "SSHProtocolFailure: Algorithm negotiation fail" -> RUNDECK ERROR ]]
 
 This seems to be a known issue with SSH-1.99-OpenSSH_6.7 as it uses a newer "Diffie-Hellman group exchange" 
-Most of my hosts that use SSH-1.99-OpenSSH_6.4 and below work fine.
+most of my test hosts using SSH-1.99-OpenSSH_6.4 and below work fine.
 
 RUNDECK uses "jsch" as for the SSH protocol... "jsch" does not seem to support the newer SSH2 protocol key exchange yet.
 
