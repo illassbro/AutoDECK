@@ -46,7 +46,7 @@ and password list in the notepad pop-ups and your are done. Enjoy your automated
  
 So if you have one password for every host it will be fast but if you have different passwords for each host 
 try to make the two files (hostfile/passfile) match host to password and line for line; else, it will try passwords in the list until 
-it finds one that works and this could take a long time depending on how many password you have.
+it finds one that works and this could take a long time depending on how many passwords you have.
 
 #####EXAMPLE:
 ```
