@@ -28,7 +28,7 @@ http://www.oracle.com/technetwork/java/javase/archive-139210.html
 
 ##Configuration:
 
-None. This tool does automates a basic install of Rundeck. 
+None. This tool automates a basic install of Rundeck. 
 
 (Plans to add more later)
 
