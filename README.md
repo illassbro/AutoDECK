@@ -7,13 +7,14 @@ AutoDECK is a small automation tool for "RUNDECK(rundeck.org/)" made with .NET(C
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=FSgPDadcEek" target="_blank"><img src="http://img.youtube.com/vi/FSgPDadcEek/0.jpg" alt="AutoDECK" width="240" height="180" border="10" /></a>
 
 
-[[ This is AutoDECK ]]
+#[[ This is AutoDECK ]]
 
-Description:
+## Description:
+
 AutoDECK is an automation tool for "RUNDECK(rundeck.org)"; basically, it does the setup work for you from 5 to 5000 hosts! 
 
 
-Requirements:
+#Requirements:
 
 .NET 4.0+ for AutoDECK (you likely already have this.)
 http://www.microsoft.com/net
@@ -23,19 +24,19 @@ http://www.oracle.com/technetwork/java/javase/downloads/java-archive-downloads-j
 http://www.oracle.com/technetwork/java/javase/archive-139210.html
 
 
-Configuration:
+#Configuration:
 
 None. This tool does automates a basic install of Rundeck. (Plans to add more later)
 
 
-How to use it?:
+#How to use it?:
 
 Install Java 1.6; Download AutoDECK, Unzip, Dubbed Click...... add your host list(IPs or hostnames) 
 and password list in the note pad pop ups and your are done. Enjoy your automated setup.
 (Please see the video)
 
 
-Known Issues (AutoDECK):
+#Known Issues (AutoDECK):
 
 One thing to note is that the tool will try all known password on every host; so if you have one password 
 for every host it will be fine but if you have different passwords for each host try to make the two files 
@@ -43,7 +44,7 @@ for every host it will be fine but if you have different passwords for each host
 this could take a long time depending on how many password you have.
 
 
-Known Issues (Rundeck/jsch):
+#Known Issues (Rundeck/jsch):
 
 [[ "SSHProtocolFailure: Algorithm negotiation fail" -> RUNDECK ERROR ]]
 This seems to be a known issue with SSH-1.99-OpenSSH_6.7 as it uses a newer "Diffie-Hellman group exchange" 
