@@ -24,6 +24,7 @@ http://www.oracle.com/technetwork/java/javase/downloads/java-archive-downloads-j
 
 http://www.oracle.com/technetwork/java/javase/archive-139210.html
 
+#####(Sorry, Windows only for now...)
 
 ##Configuration:
 
