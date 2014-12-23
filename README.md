@@ -60,7 +60,7 @@ host3           <===== If no password is here expect that
 
 ##Known Issues (Rundeck/jsch):
 
-[[ "SSHProtocolFailure: Algorithm negotiation fail" -> RUNDECK ERROR ]]
+#####[[ "SSHProtocolFailure: Algorithm negotiation fail" -> RUNDECK ERROR ]]
 
 This seems to be a known issue with SSH-1.99-OpenSSH_6.7 as it uses a newer "Diffie-Hellman group exchange" 
 Most of my hosts that use SSH-1.99-OpenSSH_6.4 and below work fine.
