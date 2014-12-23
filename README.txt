@@ -55,48 +55,22 @@ for /F "tokens=1-3 delims=: " %i in ('time /t') do notepad AutoDECK-beta-clean.c
 
 Known Problems
 ======================
+Known Issues (AutoDECK):
+
+One thing to note is that the tool will try all known password on every host; so if you have one password 
+for every host it will be fine but if you have different passwords for each host try to make the two files 
+(hostfile/passfile) match line for line else it will try passwords in the list until it finds one that works
+this could take a long time depending on how many password you have.
+
+
+Known Issues (Rundeck/jsch):
 
 [[ "SSHProtocolFailure: Algorithm negotiation fail" -> RUNDECK ERROR ]]
-This seems to be a known issue with SSH-1.99-OpenSSH_6.7 as it uses a newer "Diffie-Hellman group exchange"; Most of my hosts had SSH-1.99-OpenSSH_6.4 and below.... and work fine.
+This seems to be a known issue with SSH-1.99-OpenSSH_6.7 as it uses a newer "Diffie-Hellman group exchange" 
+Most of my hosts had SSH-1.99-OpenSSH_6.4 and below.... and work fine.
 
-
-#RUNDECK uses "jsch" as for the SSH protocal... 
+RUNDECK uses "jsch" as for the SSH protocol... "jsch" does not seem to support the newer SSH2 protocol key exchange yet.
 http://www.jcraft.com/jsch/
-
-It does not seem to support the newer SSH2 protocol key exchange:
-
-Key exchange: diffie-hellman-group-exchange-sha1, diffie-hellman-group1-sha1
-Cipher: blowfish-cbc,3des-cbc,aes128-cbc,aes192-cbc,aes256-cbc,aes128-ctr,aes192-ctr,aes256-ctr,3des-ctr,arcfour,arcfour128,arcfour256
-MAC: hmac-md5, hmac-sha1, hmac-md5-96, hmac-sha1-96
-Host key type: ssh-dss,ssh-rsa 
-
-
-#AN SSH DEBUG
-C:\>plink -i C:\id_dsa.ppk -ssh -v root@14.0.0.126
-Looking up host "14.0.0.126"
-Connecting to 14.0.0.126 port 22
-Server version: SSH-1.99-OpenSSH_6.7
-Using SSH protocol version 2
-We claim version: SSH-2.0-PuTTY_Release_0.63
-Doing Diffie-Hellman group exchange
-Doing Diffie-Hellman key exchange with hash SHA-256 <=============== (jsch) JAVA SSH DOES NOT LIKE THIS [http://www.jcraft.com/jsch/]
-Host key fingerprint is:
-ssh-rsa 2048 90:6a:2b:60:2f:cd:46:cc:14:05:26:fc:b7:3e:6a:2d
-Initialised AES-256 SDCTR client->server encryption
-Initialised HMAC-SHA-256 client->server MAC algorithm
-Initialised AES-256 SDCTR server->client encryption
-Initialised HMAC-SHA-256 server->client MAC algorithm
-Reading private key file "C:\id_dsa.ppk"
-Using username "root".
-Offered public key
-Offer of public key accepted
-Authenticating with public key "rsa-key-20141204"
-Sent public key signature
-Access granted
-Opening session as main channel
-Opened main channel
-Allocated pty (ospeed 38400bps, ispeed 38400bps)
-C:\>
 
 
 
