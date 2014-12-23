@@ -1,7 +1,7 @@
 
 AutoDECK is a small automation tool for "RUNDECK(rundeck.org/)" made with .NET(C#) ....... Basically it does the setup work for you from 5 to 5000 hosts! ;) 
 
-s
+
 BUILD AutoDECK
 ======================
 
