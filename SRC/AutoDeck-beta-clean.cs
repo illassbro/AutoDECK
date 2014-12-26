@@ -622,13 +622,32 @@ namespace AUTODECK
             Boolean success = false;
             try
             {
-                string pinghost = host; // PING HOST
+                //string pinghost = host; // PING HOST
                 Ping pingreq = new Ping();
-                PingReply rep = pingreq.Send(pinghost);
+                PingOptions options = new PingOptions();
+                options.DontFragment = true;
+                options.Ttl = 52;
+                string data = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+                byte[] buffer = Encoding.ASCII.GetBytes(data);
+                int timeout = 1000;
+                PingReply rep = pingreq.Send(host, timeout / 16, buffer, options);
+                PingReply rep1 = pingreq.Send(host, timeout / 8, buffer, options);
+                PingReply rep2 = pingreq.Send(host, timeout / 4, buffer, options);
+                PingReply rep3 = pingreq.Send(host, timeout / 2, buffer, options);
+                PingReply rep4 = pingreq.Send(host, timeout, buffer, options);
+                //PingReply rep = pingreq.Send(pinghost);
                 //Console.WriteLine("THREAD# {0} Pinging {1} [{2}]", Thread.CurrentThread.Name, pinghost, rep.Address.ToString());
                 //Console.WriteLine("THREAD# {0} Reply From {1} : time={2} TTL={3}",Thread.CurrentThread.Name, rep.Address.ToString(), rep.RoundtripTime, rep.Options.Ttl);
                 //Console.WriteLine(rep.Status);
                 if ((rep.Status.ToString() != "DestinationHostUnreachable") && (rep.Status.ToString() != "TimedOut"))
+                    success = true;
+                else if ((rep1.Status.ToString() != "DestinationHostUnreachable") && (rep1.Status.ToString() != "TimedOut"))
+                    success = true;
+                else if ((rep2.Status.ToString() != "DestinationHostUnreachable") && (rep2.Status.ToString() != "TimedOut"))
+                    success = true;
+                else if ((rep3.Status.ToString() != "DestinationHostUnreachable") && (rep3.Status.ToString() != "TimedOut"))
+                    success = true;
+                else if ((rep4.Status.ToString() != "DestinationHostUnreachable") && (rep4.Status.ToString() != "TimedOut"))
                     success = true;
                 else
                 {
