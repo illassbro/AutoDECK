@@ -1,7 +1,7 @@
 AutoDECK
 ========
 
-AutoDECK is a automation tool for "RUNDECK(http://rundeck.org)"
+AutoDECK is a automation tool for "RUNDECK(http://rundeck.org)"......
 
 "It could simply be the fastest way to start using Rundeck. Don't take my word for it as the proof is in the clicking."
 
