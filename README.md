@@ -3,7 +3,7 @@ AutoDECK
 
 AutoDECK is a automation tool for "RUNDECK(http://rundeck.org)"......
 
-"It could simply be the fastest way to start using Rundeck. Don't take my word for it as the proof is in the clicking."
+#####"It could simply be the fastest way to start using Rundeck. Don't take my word for it as the proof is in the clicking."
 
 
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=FSgPDadcEek" target="_blank"><img src="http://img.youtube.com/vi/FSgPDadcEek/0.jpg" alt="AutoDECK" width="240" height="180" border="10" /></a>
