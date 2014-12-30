@@ -685,8 +685,8 @@ namespace AUTODECK
                                     }
                                     catch
                                     {
-                                        
-                                        Alert.Yellow("THREAD# " + Thread.CurrentThread.Name.ToString() + " SSH CONNECTION FAILURE (BAD PASSWORD?):" +pw+ " " + host.ToString());
+                                        //Alert.Yellow("THREAD# " + Thread.CurrentThread.Name.ToString() + " SSH CONNECTION FAILURE (BAD PASSWORD?):" + pw + " " + host.ToString()); //DEBUG                                       
+                                        Alert.Yellow("THREAD# " + Thread.CurrentThread.Name.ToString() + " SSH CONNECTION FAILURE (BAD PASSWORD?): " + host.ToString());
                                         //if (pw.Equals(thepass[thepass.Count - 1])) //foreach (string pw in thepass)
                                         if (pwcount == thepass.Count)
                                         {
