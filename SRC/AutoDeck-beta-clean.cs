@@ -222,6 +222,7 @@ namespace AUTODECK
             string PASSFILE = dir0 + @"\passfile.txt";
             var passlist = File.ReadAllLines(PASSFILE);
             foreach (var s in passlist) pass.Add(s); //PASSWD LIST 
+            Console.WriteLine(":::::::::::::::::::::::::::::: PASSWORD LIST COUNT {0} ::::::::::::::::::::::::::::::", pass.Count);
             //pass.Add("passwd");
 
             List<object> user = new List<object>(); //USER LIST [NOT USED FOR NOW]
@@ -406,34 +407,29 @@ namespace AUTODECK
                 mypass = pass;
                 List<object> newmypass = new List<object>();
                 newmypass = pass;
-                List<object> usemypass = new List<object>();
 
                 int cp = 0;
                 foreach (string p in mypass) //LIST
                 {
-                    int idx = cp;
-                    cp++;
                     int tc = Convert.ToInt16(Thread.CurrentThread.Name); //USE THREAD NAME AS INDEX
-                    if (idx == tc)
+                    //Console.WriteLine("THREAD#{0}: {1} == {2} [COUNT {3}]", Thread.CurrentThread.Name, cp, tc, mypass.Count); //DEBUG VIEW
+                    if (cp == tc)
                     {
-                        newmypass.RemoveAt(idx); //SHUFFLE: Remove Item Here
-                        newmypass.Insert(0,p); //ADD Item to top of list
+                        newmypass.RemoveAt(cp); //SHUFFLE: Remove Item Here
+                        newmypass.Insert(0, p); //ADD Item to top of list
                         break;
                     }
+                    cp += 1;
                 }
-                usemypass = newmypass; //LAST COPY
-                /*
+
                 //TEST NEW LIST
-                int osize = newmypass.Count;
-                int isize = mypass.Count;
-                foreach (string i in usemypass)
-                {
-                    Console.WriteLine("{1} NEW LIST: {0}", i, Thread.CurrentThread.Name); //DEBUG VIEW
-                    break;
-                }
-                */
-                List<object> sh = usemypass; //REORDERED LIST
-                return sh;
+                //foreach (string i in newmypass)
+                //{
+                //    Console.WriteLine("{1} NEW LIST: {0} COUNT: {2}/{3}", i, Thread.CurrentThread.Name, newmypass.Count, pass.Count); //DEBUG VIEW
+                //    break; //PRINT FIRST LINE
+                //}
+                List<object> returnList = newmypass; //REORDERED LIST
+                return returnList;
             }
         }
 
@@ -626,7 +622,7 @@ namespace AUTODECK
                 Ping pingreq = new Ping();
                 PingOptions options = new PingOptions();
                 options.DontFragment = true;
-                options.Ttl = 52;
+                options.Ttl = 128;
                 string data = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
                 byte[] buffer = Encoding.ASCII.GetBytes(data);
                 int timeout = 1000;
@@ -665,6 +661,7 @@ namespace AUTODECK
                 {
                     try
                     {
+                        int pwcount = 0;
                         Alert.White("THREAD# " + Thread.CurrentThread.Name.ToString() + " START: SSH TO HOST: " + host.ToString());
                         //Console.WriteLine(">> {0} START: SSH TO HOST: {1} <<", Thread.CurrentThread.Name, host);
                         foreach (string pw in thepass) //LOOP OVER PASSWORD LIST
@@ -676,6 +673,7 @@ namespace AUTODECK
                                 {
                                     try
                                     {
+                                        
                                         var ssc = new SshClient(host, user, pw);
                                         client.Connect(); //TRY CONNECTION
                                         //Console.WriteLine("{0} CONNECTED: [GOOD PASSWORD: {2}] [HOST: {1}]", Thread.CurrentThread.Name, host, pw);
@@ -687,12 +685,15 @@ namespace AUTODECK
                                     }
                                     catch
                                     {
-                                        Alert.Yellow("THREAD# " + Thread.CurrentThread.Name.ToString() + " SSH CONNECTION FAILURE (BAD PASSWORD?): " + host.ToString());
-                                        if (pw.Equals(thepass[thepass.Count - 1])) //foreach (string pw in thepass)
+                                        
+                                        Alert.Yellow("THREAD# " + Thread.CurrentThread.Name.ToString() + " SSH CONNECTION FAILURE (BAD PASSWORD?):" +pw+ " " + host.ToString());
+                                        //if (pw.Equals(thepass[thepass.Count - 1])) //foreach (string pw in thepass)
+                                        if (pwcount == thepass.Count)
                                         {
                                             BADHOST(host);
                                             Alert.Red("THREAD# " + Thread.CurrentThread.Name.ToString() + " ALL PASSWORDS FAILED FOR HOST: " + host.ToString());
                                         }
+                                        pwcount += 1;
                                         continue; //IF CONNECTION FAILS DO NEXT LOOP
                                     }
 
