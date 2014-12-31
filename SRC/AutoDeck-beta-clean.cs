@@ -47,7 +47,8 @@ namespace AUTODECK
         public static string dir3 = desktop + @"\AutoDECK\BIN";
 
         //FILES
-        public static string bhFile = dir0 + @"\FAILED_hostfile.txt";
+        public static string bhpwdFile = dir0 + @"\FAILED_PASSWORD_hostfile.txt";
+        public static string bhpingFile = dir0 + @"\FAILED_PING_hostfile.txt";
 
         //[[#AutoDECK]] SSH KEY
         public static StringBuilder sshkey = new StringBuilder();
@@ -97,6 +98,13 @@ namespace AUTODECK
             }
             Console.WriteLine("PROCESS NAME: " + Process.GetCurrentProcess()); //LIST EXE NAME
             Console.WriteLine("[Thread.CurrentThread.Name]: " + Thread.CurrentThread.Name); //LIST THREAD NAME
+            
+            string AutoDECK_Path = Directory.GetCurrentDirectory();
+            string result1 = Regex.Replace(Process.GetCurrentProcess().ToString(), @"^.*\(", "");
+            string AutoDECK = Regex.Replace(result1, @"\)$", ".exe");
+            string RESTART = AutoDECK_Path +@"\"+ AutoDECK;
+
+            Console.WriteLine("[RESTART ME]: " + RESTART); //RESTART STRING
 
 
             //[[#AutoDECK]] MAKE DIRS
@@ -123,12 +131,16 @@ namespace AUTODECK
             getpthread.Start();
 
             //MAKE SSH KEYS : THREAD
-            string ssh = null; 
+            string gotkey = dir1 + @"\AutoDECK_dsa.ppk";           
+            string ssh = null;
             Thread makekeythread = new Thread(() => ssh = MAKE_RSA_KEY.MAKE_KEY());
             makekeythread.Name = "MAKE_RSA_KEY_THREAD";
-            makekeythread.Start();
-            //makekeythread.Join(); //RETURN SSH KEY LATER
-            //sshkey.Append(ssh);
+            if (!File.Exists(gotkey)) 
+                makekeythread.Start();
+                //makekeythread.Join(); //RETURN SSH KEY LATER
+                //sshkey.Append(ssh);
+
+            
 
             //WAIT HERE FOR JAVA INSTALL
             GotJAVA(); //MAIN THREAD STOP
@@ -222,7 +234,7 @@ namespace AUTODECK
             string PASSFILE = dir0 + @"\passfile.txt";
             var passlist = File.ReadAllLines(PASSFILE);
             foreach (var s in passlist) pass.Add(s); //PASSWD LIST 
-            Console.WriteLine(":::::::::::::::::::::::::::::: PASSWORD LIST COUNT {0} ::::::::::::::::::::::::::::::", pass.Count);
+            //Console.WriteLine(":::::::::::::::::::::::::::::: PASSWORD LIST COUNT {0} ::::::::::::::::::::::::::::::", pass.Count);
             //pass.Add("passwd");
 
             List<object> user = new List<object>(); //USER LIST [NOT USED FOR NOW]
@@ -230,8 +242,24 @@ namespace AUTODECK
 
 
             //WAIT HERE FOR SSH KEY
-            makekeythread.Join(); //RETURN SSHKEY HERE
-            sshkey.Append(ssh);
+            if (makekeythread.IsAlive)
+            {
+                makekeythread.Join(); //RETURN SSHKEY HERE
+                sshkey.Append(ssh);
+            }
+            else if (string.IsNullOrEmpty(ssh))
+            {
+                string keystringFile = dir1 + @"\sshkey-string.txt";
+                if (File.Exists(keystringFile))
+                {
+                    System.IO.StreamReader file = new System.IO.StreamReader(keystringFile);
+                    string go = file.ReadToEnd();
+                    sshkey.Append(go);
+                }
+            }
+
+            
+
 
 
             //RUN SSH CLIENT CONF THREADS
@@ -285,14 +313,38 @@ namespace AUTODECK
             //[[#AutoDECK]] START UP RUNDECK PROC w/FORK
             while (!GO) { }
             while (!COMPLETE) { }
-            Directory.SetCurrentDirectory(dir2);
-            Console.WriteLine("[START RUNDECK] Current directory: {0}", Directory.GetCurrentDirectory());
-            System.Diagnostics.Process _RunDeck = new System.Diagnostics.Process();
-            _RunDeck.StartInfo.FileName = "cmd";
-            _RunDeck.StartInfo.Arguments = "/c START cmd /T:6b /k " + rdeck;
-            Thread rundeckthread = new Thread(() => _RunDeck.Start());
-            rundeckthread.Name = "RUNDECK THREAD";
-            rundeckthread.Start();
+            
+            Console.WriteLine("[ SEARCHING FOR RUNDECK SERVER PORT ]");
+            bool portFound = false;
+            do
+            {
+                int port = 4440; //Rundeck Server Port
+                IPGlobalProperties properties = IPGlobalProperties.GetIPGlobalProperties();
+                IPEndPoint[] endPoints = properties.GetActiveTcpListeners();
+                foreach (IPEndPoint e in endPoints)
+                {
+                    if (e.ToString() == "0.0.0.0:" + port)
+                    {
+                        Console.WriteLine("....FOUND RUNDECK SERVER PORT (Attempting to start Rundeck URL in web browser!)");
+                        portFound = true;
+                        break;
+                    }
+                }
+            }
+            while(!COMPLETE);
+
+            if (!portFound)
+            {                
+                Directory.SetCurrentDirectory(dir2);
+                Console.WriteLine("[START RUNDECK] Current directory: {0}", Directory.GetCurrentDirectory());
+                System.Diagnostics.Process _RunDeck = new System.Diagnostics.Process();
+                _RunDeck.StartInfo.FileName = "cmd";
+                _RunDeck.StartInfo.Arguments = "/c START cmd /T:6b /k " + rdeck;
+                Thread rundeckthread = new Thread(() => _RunDeck.Start());
+                rundeckthread.Name = "RUNDECK_THREAD";
+                rundeckthread.Start();
+            }
+
 
             //CONNECT TO RUNDECK URL
             Thread urlthread = new Thread(() => Rundeck_URL());
@@ -326,13 +378,21 @@ namespace AUTODECK
             Console.ResetColor();
             Console.WriteLine("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nALL DONE\nGOTO: http://127.0.0.1:4440\nUserName: admin\nPassWord: admin");
             Console.WriteLine("[[SEE: http://rundeck.org/docs/]]");
-            Console.WriteLine("\n\n[[ (Optional) INSTALL FROM DIR: {0} ]]\n[Press p] (Optional) to Install Putty \n[Press q] to QUIT!\n\n", dir3);
+            Console.WriteLine("\n\n[[ (Optional) INSTALL FROM DIR: {0} ]]\n[Press p] (Optional) to Install Putty\n[Press r] to Re-Run on (ping)FAILED Hosts\n[Press q] to QUIT!\n\n", dir3);
             Alert.DarkMagenta("\n[[ WAITING FOR RUNDECK SERVER ]]");
-            if (File.Exists(bhFile))
-                Alert.Red("[[ FAILED HOST LIST ]]: " + bhFile.ToString());
-     
-            //SHOW_RD = true;
 
+
+            if (File.Exists(bhpingFile) && File.Exists(bhpwdFile))
+                Alert.Red("[[ FAILED HOST LIST(S) ]]: \n"+ bhpingFile.ToString() + "\n" + bhpwdFile.ToString());
+            else if (File.Exists(bhpwdFile))
+                Alert.Red("[[ FAILED HOST LIST ]]: " + bhpwdFile.ToString());
+            else if (File.Exists(bhpingFile))
+                Alert.Red("[[ FAILED HOST LIST ]]: " + bhpingFile.ToString());
+
+
+
+            //SHOW_RD = true;
+            Boolean DO_RESTART = false;
             do
             {
                 ConsoleKeyInfo cki;
@@ -345,11 +405,60 @@ namespace AUTODECK
                 }
                 if (cki.Key == ConsoleKey.Q)
                     break;
+                if (cki.Key == ConsoleKey.R)
+                {
+                    DO_RESTART = true;
+                    break;
+                }
 
-                Console.WriteLine("[Press p] (Optional) to Install Putty\n[Press q] to QUIT!");
+                Console.WriteLine("\n\n[Press p] (Optional) to Install Putty\n[Press r] to Re-Run on (ping)FAILED Hosts\n[Press q] to QUIT!");
             }
             while (true);
-            
+
+
+            if (File.Exists(bhpingFile)) //RERUN PREP
+            {
+                string path1 = dir0 + @"\hostfile1.txt";
+                string path2 = dir0 + @"\hostfile2.txt";
+                string path3 = dir0 + @"\hostfile3.txt";
+                string ARCH = dir0 + @"\hostfile-ARCH.txt";
+                if (!File.Exists(ARCH))
+                    File.Move(HOSTFILE, ARCH);
+
+                if (File.Exists(path3))
+                    File.Delete(path3);
+
+                if (File.Exists(path2))
+                    File.Move(path2, path3);
+
+                if (File.Exists(path1))
+                    File.Move(path1, path2);
+
+                if (File.Exists(HOSTFILE))
+                    File.Move(HOSTFILE, path1);
+
+                if (File.Exists(bhpingFile))
+                    File.Move(bhpingFile, HOSTFILE);
+            }
+
+            //RESTART AutoDECK on (PING) Failed Hosts!!!
+            if(DO_RESTART)
+            {                
+                //System.Diagnostics.Process.Start(RESTART);
+                Directory.SetCurrentDirectory(AutoDECK_Path);
+                System.Diagnostics.Process _AutoDECK = new System.Diagnostics.Process();
+                _AutoDECK.StartInfo.FileName = "cmd";
+                _AutoDECK.StartInfo.Arguments = "/c START " + RESTART;
+                Thread _AutoDECK_thread = new Thread(() => _AutoDECK.Start());
+                _AutoDECK_thread.Name = "AutoDECK_THREAD";
+                _AutoDECK_thread.Start();
+            }
+                
+
+
+
+
+
 
         }//MAIN END
 
@@ -434,16 +543,28 @@ namespace AUTODECK
         }
 
         //SAVE BAD HOSTS 
-        public static Object LOCK_BADHOST = new Object();
-        public static void BADHOST(string host)
+        public static Object LOCK_BADHOST_PING = new Object();
+        public static void BADHOSTPING(string host)
         {
-            lock (LOCK_BADHOST)
+            lock (LOCK_BADHOST_PING)
             {
-                //string bhFile = dir0 + @"\FAILED_hostfile.txt";
-                System.IO.StreamWriter badfile = new System.IO.StreamWriter(bhFile,true);
+                System.IO.StreamWriter badfile = new System.IO.StreamWriter(bhpingFile,true);
                 badfile.WriteLine(host);
                 badfile.Close();
-                Console.WriteLine("THREAD# {0} [ FAILED HOST ({1}) SAVED TO LIST: {2} ]", Thread.CurrentThread.Name, host, bhFile);
+                Console.WriteLine("THREAD# {0} [ FAILED HOST ({1}) SAVED TO LIST: {2} ]", Thread.CurrentThread.Name, host, bhpingFile);
+            }
+        }
+
+        //SAVE BAD HOSTS 
+        public static Object LOCK_BADHOST_PWD = new Object();
+        public static void BADHOSTPWD(string host)
+        {
+            lock (LOCK_BADHOST_PWD)
+            {
+                System.IO.StreamWriter badfile = new System.IO.StreamWriter(bhpwdFile, true);
+                badfile.WriteLine(host);
+                badfile.Close();
+                Console.WriteLine("THREAD# {0} [ FAILED HOST ({1}) SAVED TO LIST: {2} ]", Thread.CurrentThread.Name, host, bhpwdFile);
             }
         }
 
@@ -648,7 +769,7 @@ namespace AUTODECK
                 else
                 {
                     Alert.Red("THREAD# " + Thread.CurrentThread.Name.ToString() + " [THREAD STOPED] => PING FAILED (HostUnreachable): " + host.ToString());
-                    BADHOST(host);
+                    BADHOSTPING(host);
                 }
             }
             catch
@@ -690,7 +811,7 @@ namespace AUTODECK
                                         //if (pw.Equals(thepass[thepass.Count - 1])) //foreach (string pw in thepass)
                                         if (pwcount == thepass.Count)
                                         {
-                                            BADHOST(host);
+                                            BADHOSTPWD(host);
                                             Alert.Red("THREAD# " + Thread.CurrentThread.Name.ToString() + " ALL PASSWORDS FAILED FOR HOST: " + host.ToString());
                                         }
                                         pwcount += 1;
