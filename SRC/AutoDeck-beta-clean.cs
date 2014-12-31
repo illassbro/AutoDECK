@@ -746,7 +746,7 @@ namespace AUTODECK
                 options.Ttl = 128;
                 string data = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
                 byte[] buffer = Encoding.ASCII.GetBytes(data);
-                int timeout = 1000;
+                int timeout = 9000;
                 PingReply rep = pingreq.Send(host, timeout / 16, buffer, options);
                 PingReply rep1 = pingreq.Send(host, timeout / 8, buffer, options);
                 PingReply rep2 = pingreq.Send(host, timeout / 4, buffer, options);
